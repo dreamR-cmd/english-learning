@@ -74,7 +74,7 @@
  import { ref, computed, onMounted } from 'vue'
  import { useRoute, useRouter } from 'vue-router'
  import NavBar from '../components/NavBar.vue'
- import { getListeningsByModule } from '../utils/api'
+ import { getListeningsByModule, submitWrongRecord } from '../utils/api'
  
  const route = useRoute()
  const router = useRouter()
@@ -112,7 +112,29 @@
    answered.value = new Array(parsedQuestions.value.length).fill(false)
  }
  function back() { router.push(`/module/${moduleCode.value}`) }
- function checkAnswer(qi) { answered.value[qi] = true }
+ function checkAnswer(qi) {
+  answered.value[qi] = true
+  const q = parsedQuestions.value[qi]
+  if (!q) return
+  const selected = selectedAnswers.value[qi]
+  if (selected !== q.answer) {
+    try {
+      const user = JSON.parse(sessionStorage.getItem('currentUser'))
+      if (user) {
+        submitWrongRecord({
+          userId: user.id,
+          questionType: 'LISTENING',
+          contentId: currentListening.value.id,
+          contentTitle: currentListening.value.title,
+          questionText: q.q,
+          userAnswer: String.fromCharCode(65 + (selected ?? -1)),
+          correctAnswer: String.fromCharCode(65 + q.answer),
+          moduleCode: moduleCode.value
+        })
+      }
+    } catch {}
+  }
+}
  </script>
  
  <style scoped>

@@ -34,9 +34,14 @@
          <h2 class="section-title">⭐ 精选读物</h2>
          <div v-if="readings.length === 0" class="empty-tip">暂无精选读物</div>
          <div v-else class="reading-list">
-           <div v-for="r in readings" :key="r.id" class="reading-item">
-             <h4>{{ r.title }}</h4>
-             <p class="reading-preview">{{ r.content?.substring(0, 120) }}...</p>
+           <div v-for="r in readings" :key="r.id" class="reading-item" @click="goToReading(r)">
+             <div class="reading-item-main">
+               <h4>{{ r.title }}</h4>
+               <p class="reading-preview">{{ r.content?.substring(0, 120) }}...</p>
+             </div>
+             <button class="btn-fav" :class="{ favorited: favoritedMap[r.id] }" @click.stop="toggleFavorite(r)">
+               {{ favoritedMap[r.id] ? '⭐' : '☆' }}
+             </button>
            </div>
          </div>
        </div>
@@ -48,13 +53,14 @@
  import { ref, onMounted, computed } from 'vue'
  import { useRoute, useRouter } from 'vue-router'
  import NavBar from '../components/NavBar.vue'
- import { getModuleByCode, getReadingsByModule } from '../utils/api'
+import { getModuleByCode, getReadingsByModule, addFavorite, removeFavorite, checkFavorite } from '../utils/api'
  
  const props = defineProps({ code: String })
  const route = useRoute()
  const router = useRouter()
  const module = ref({})
  const readings = ref([])
+const favoritedMap = ref({})
  const moduleCode = computed(() => props.code || route.params.code)
  
  onMounted(async () => {
@@ -64,12 +70,40 @@
        getReadingsByModule(moduleCode.value)
      ])
      module.value = modRes.data.data || {}
-     readings.value = (readRes.data.data || []).filter(r => r.featured)
+    const allReadings = readRes.data.data || []
+    readings.value = allReadings.filter(r => r.featured)
+    // Check which readings are favorited
+    try {
+      const user = JSON.parse(sessionStorage.getItem('currentUser'))
+      if (user) {
+        for (const r of readings.value) {
+          const favRes = await checkFavorite(user.id, r.id)
+          if (favRes.data.data) favoritedMap.value[r.id] = true
+        }
+      }
+    } catch {}
    } catch (e) {
      console.error('Failed to load module', e)
    }
  })
  
+async function toggleFavorite(reading) {
+  try {
+    const user = JSON.parse(sessionStorage.getItem('currentUser'))
+    if (!user) return
+    if (favoritedMap.value[reading.id]) {
+      await removeFavorite(user.id, reading.id)
+      favoritedMap.value[reading.id] = false
+    } else {
+      await addFavorite(user.id, reading.id)
+      favoritedMap.value[reading.id] = true
+    }
+  } catch {}
+}
+function goToReading(reading) {
+  router.push(`/practice/readings/${moduleCode.value}`)
+}
+
  function backToModules() { router.push('/modules') }
  function goToPractice(type) {
    router.push(`/practice/${type}/${moduleCode.value}`)
@@ -142,6 +176,25 @@
    padding: 20px 24px;
    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
  }
- .reading-item h4 { font-size: 16px; color: #333; margin-bottom: 8px; }
- .reading-preview { font-size: 13px; color: #888; line-height: 1.6; }
- </style>
+ .reading-item-main { flex: 1; min-width: 0; }
+.reading-item h4 { font-size: 16px; color: #333; margin-bottom: 8px; }
+.reading-preview { font-size: 13px; color: #888; line-height: 1.6; }
+ .btn-fav {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  color: #ccc;
+}
+.btn-fav:hover {
+  background: #fffbeb;
+  transform: scale(1.2);
+}
+.btn-fav.favorited {
+  color: #f59e0b;
+}
+</style>
