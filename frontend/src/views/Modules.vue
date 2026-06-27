@@ -24,7 +24,7 @@
              </div>
              <div
                class="countdown-value"
-               :class="{ urgent: mod.examCountdown.isUrgent }"
+               :class="{ urgent: mod.examCountdown.urgent }"
              >
                {{ mod.examCountdown.countdownText }}
              </div>
@@ -40,15 +40,20 @@
  import { useRouter } from 'vue-router'
  import NavBar from '../components/NavBar.vue'
  import { getModules } from '../utils/api'
- import { getExamCountdown } from '../utils/examCountdown'
- 
+
  const router = useRouter()
  const modules = ref([])
  const loading = ref(true)
+ const fallbackCountdown = {
+   label: '考试安排',
+   dateText: '待更新',
+   countdownText: '敬请期待',
+   urgent: false
+ }
  const modulesWithCountdown = computed(() =>
    modules.value.map(mod => ({
      ...mod,
-     examCountdown: getExamCountdown(mod.code)
+     examCountdown: mod.examCountdown || fallbackCountdown
    }))
  )
  

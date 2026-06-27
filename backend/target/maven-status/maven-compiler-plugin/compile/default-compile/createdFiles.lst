@@ -1,4 +1,5 @@
 com\english\entity\ExamModule.class
+com\english\dto\ExamCountdown.class
 com\english\mapper\ListeningMapper.class
 com\english\controller\PracticeController.class
 com\english\controller\ModuleController.class
@@ -21,3 +22,4 @@ com\english\controller\AuthController.class
 com\english\dto\ApiResult.class
 com\english\entity\Listening.class
 com\english\mapper\UserMapper.class
+com\english\service\CountdownService.class

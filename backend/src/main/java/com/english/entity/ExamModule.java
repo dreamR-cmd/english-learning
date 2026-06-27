@@ -1,5 +1,6 @@
  package com.english.entity;
  
+ import com.english.dto.ExamCountdown;
  import jakarta.persistence.*;
  
  @Entity
@@ -15,6 +16,9 @@
      private String description;
      private String icon;
      private Integer sortOrder;
+
+     @Transient
+     private ExamCountdown examCountdown;
  
      public ExamModule() {}
  
@@ -30,4 +34,6 @@
      public void setIcon(String icon) { this.icon = icon; }
      public Integer getSortOrder() { return sortOrder; }
      public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+     public ExamCountdown getExamCountdown() { return examCountdown; }
+     public void setExamCountdown(ExamCountdown examCountdown) { this.examCountdown = examCountdown; }
  }
