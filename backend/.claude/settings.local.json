@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 fix_data.py)",
+      "Bash(xxd \"C:/Users/Administrator/Documents/Codex/2026-06-26/vue-java-springboot-cet4-cet6-cet4/outputs/english-learning/backend/src/main/resources/data.sql\")",
+      "Bash(mysqladmin ping *)",
+      "PowerShell(& \"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -u root -p123456 -e \"SHOW DATABASES LIKE 'english_learning';\" 2>&1)",
+      "PowerShell($port = 8081; $proc = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess; if \\($proc\\) { Stop-Process -Id $proc -Force; Write-Output \"Killed process $proc on port $port\" } else { Write-Output \"No process on port $port\" })"
+    ]
+  }
+}
