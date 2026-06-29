@@ -5,6 +5,8 @@
  @Entity
  @Table(name = "users")
  public class User {
+     public static final int DEFAULT_DAILY_WORD_TARGET = 20;
+
      @Id
      @GeneratedValue(strategy = GenerationType.IDENTITY)
      private Long id;
@@ -13,12 +15,15 @@
      @Column(nullable = false)
      private String password;
      private String nickname;
+     @Column(name = "daily_word_target")
+     private Integer dailyWordTarget;
  
      public User() {}
      public User(String username, String password, String nickname) {
          this.username = username;
          this.password = password;
          this.nickname = nickname;
+         this.dailyWordTarget = DEFAULT_DAILY_WORD_TARGET;
      }
  
      public Long getId() { return id; }
@@ -29,4 +34,8 @@
      public void setPassword(String password) { this.password = password; }
      public String getNickname() { return nickname; }
      public void setNickname(String nickname) { this.nickname = nickname; }
+     public Integer getDailyWordTarget() {
+         return dailyWordTarget == null ? DEFAULT_DAILY_WORD_TARGET : dailyWordTarget;
+     }
+     public void setDailyWordTarget(Integer dailyWordTarget) { this.dailyWordTarget = dailyWordTarget; }
  }

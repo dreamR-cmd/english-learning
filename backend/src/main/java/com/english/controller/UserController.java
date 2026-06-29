@@ -3,6 +3,7 @@ package com.english.controller;
 import com.english.dto.ApiResult;
 import com.english.entity.User;
 import com.english.entity.UserFavorite;
+import com.english.entity.UserWordProgress;
 import com.english.entity.WrongRecord;
 import com.english.service.UserService;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,10 @@ public class UserController {
         try {
             Long userId = Long.valueOf(body.get("userId").toString());
             String nickname = (String) body.get("nickname");
-            User user = userService.updateProfile(userId, nickname);
+            Integer dailyWordTarget = body.get("dailyWordTarget") == null
+                    ? null
+                    : Integer.valueOf(body.get("dailyWordTarget").toString());
+            User user = userService.updateProfile(userId, nickname, dailyWordTarget);
             user.setPassword(null);
             return ApiResult.success("更新成功", user);
         } catch (Exception e) {
@@ -90,5 +94,34 @@ public class UserController {
     @GetMapping("/favorites/check")
     public ApiResult<Boolean> checkFavorite(@RequestParam Long userId, @RequestParam Long readingId) {
         return ApiResult.success(userService.isFavorite(userId, readingId));
+    }
+
+    @PostMapping("/word-progress/known")
+    public ApiResult<UserWordProgress> markWordKnown(@RequestBody Map<String, Object> body) {
+        try {
+            Long userId = Long.valueOf(body.get("userId").toString());
+            Long wordId = Long.valueOf(body.get("wordId").toString());
+            UserWordProgress progress = userService.markWordKnown(userId, wordId);
+            return ApiResult.success("已记录认识次数", progress);
+        } catch (Exception e) {
+            return ApiResult.error(400, e.getMessage());
+        }
+    }
+
+    @PostMapping("/word-progress/reset")
+    public ApiResult<UserWordProgress> resetWordProgress(@RequestBody Map<String, Object> body) {
+        try {
+            Long userId = Long.valueOf(body.get("userId").toString());
+            Long wordId = Long.valueOf(body.get("wordId").toString());
+            UserWordProgress progress = userService.resetWordProgress(userId, wordId);
+            return ApiResult.success("已重置单词掌握次数", progress);
+        } catch (Exception e) {
+            return ApiResult.error(400, e.getMessage());
+        }
+    }
+
+    @GetMapping("/word-progress/review")
+    public ApiResult<List<UserWordProgress>> getReviewWords(@RequestParam Long userId) {
+        return ApiResult.success(userService.getReviewWords(userId));
     }
 }

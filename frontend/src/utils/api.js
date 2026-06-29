@@ -25,6 +25,14 @@ export function getWordsByModule(moduleCode) {
   return api.get(`/practice/words/${moduleCode}`)
 }
 
+export function getWordsByModuleForUser(moduleCode, userId) {
+  return api.get(`/practice/words/${moduleCode}`, { params: { userId } })
+}
+
+export function getDailyWords(userId) {
+  return api.get('/practice/words/daily', { params: { userId } })
+}
+
 export function getReadingsByModule(moduleCode) {
   return api.get(`/practice/readings/${moduleCode}`)
 }
@@ -33,8 +41,8 @@ export function getListeningsByModule(moduleCode) {
   return api.get(`/practice/listenings/${moduleCode}`)
 }
 
-export function updateProfile(userId, nickname) {
-  return api.put('/user/profile', { userId, nickname })
+export function updateProfile(userId, nickname, dailyWordTarget) {
+  return api.put('/user/profile', { userId, nickname, dailyWordTarget })
 }
 
 export function submitWrongRecord(data) {
@@ -63,6 +71,18 @@ export function getFavorites(userId) {
 
 export function checkFavorite(userId, readingId) {
   return api.get('/user/favorites/check', { params: { userId, readingId } })
+}
+
+export function markWordKnown(userId, wordId) {
+  return api.post('/user/word-progress/known', { userId, wordId })
+}
+
+export function resetWordProgress(userId, wordId) {
+  return api.post('/user/word-progress/reset', { userId, wordId })
+}
+
+export function getReviewWords(userId) {
+  return api.get('/user/word-progress/review', { params: { userId } })
 }
 
 export default api

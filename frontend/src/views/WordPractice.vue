@@ -5,11 +5,14 @@
       <div class="breadcrumb" @click="back">← 返回模块</div>
       <h1>📖 单词练习</h1>
 
-      <div v-if="loading" class="loading">加载单词中...</div>
-      <div v-else-if="words.length === 0" class="empty-tip">暂无单词数据</div>
+      <div v-if="loading" class="loading">加载今日单词中...</div>
+      <div v-else-if="words.length === 0" class="empty-tip">
+        今日没有可练习的单词，已完成的单词会在复习模块中查看。
+      </div>
       <div v-else class="word-card-container">
         <div class="word-progress">
-          第 {{ currentIndex + 1 }} / {{ words.length }} 个单词
+          今日随机单词 {{ words.length }} 个
+          <span class="progress-meta">当前词库来源：{{ currentWord.moduleCode?.toUpperCase() || '全词库' }}</span>
           <div class="progress-bar">
             <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
           </div>
@@ -33,86 +36,167 @@
         </div>
 
         <div class="word-actions">
-          <button class="btn-unknown" @click="markAsUnknown">
-            🤔 不认识
+          <button class="word-action-btn word-action-btn-known" @click="markAsKnown">
+            {{ currentWord.knownCount >= 3 ? '认识并完成' : '认识' }}
           </button>
-          <p v-if="unknownMarked" class="unknown-hint">已记录到错题本</p>
+          <button class="word-action-btn word-action-btn-blur" @click="markAsBlur">
+            模糊
+          </button>
+          <button class="word-action-btn word-action-btn-unknown" @click="markAsUnknown">
+            不认识
+          </button>
         </div>
 
-        <div class="word-nav">
-          <button @click="prevWord" :disabled="currentIndex === 0">← 上一个</button>
-          <button @click="nextWord" :disabled="currentIndex === words.length - 1">下一个 →</button>
-        </div>
+        <p v-if="unknownMarked" class="unknown-hint">已记录到错题本，并重置认识次数</p>
+        <p v-else-if="blurMarked" class="blur-hint">已标记为模糊，本次不计认识次数</p>
+        <p class="known-hint">当前累计认识 {{ currentWord.knownCount || 0 }} / 4 次</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import NavBar from '../components/NavBar.vue'
-import { getWordsByModule, submitWrongRecord } from '../utils/api'
+import { getDailyWords, markWordKnown, resetWordProgress, submitWrongRecord } from '../utils/api'
 
-const route = useRoute()
 const router = useRouter()
-const props = defineProps({ moduleCode: String })
-const moduleCode = computed(() => props.moduleCode || route.params.moduleCode)
+const user = readCurrentUser()
 
 const words = ref([])
 const loading = ref(true)
-const currentIndex = ref(0)
 const isFlipped = ref(false)
 const unknownMarked = ref(false)
-const currentWord = computed(() => words.value[currentIndex.value] || {})
+const blurMarked = ref(false)
+const currentWord = ref({})
 const progressPercent = computed(() =>
-  words.value.length > 0 ? ((currentIndex.value + 1) / words.value.length) * 100 : 0
+  words.value.length > 0 ? Math.min(100, ((currentWord.value.knownCount || 0) / 4) * 100) : 0
 )
 
 onMounted(async () => {
+  await loadDailyWords()
+})
+
+function readCurrentUser() {
   try {
-    const res = await getWordsByModule(moduleCode.value)
+    return JSON.parse(sessionStorage.getItem('currentUser'))
+  } catch {
+    return null
+  }
+}
+
+async function loadDailyWords() {
+  if (!user) {
+    loading.value = false
+    return
+  }
+
+  try {
+    const res = await getDailyWords(user.id)
     words.value = res.data.data || []
-  } catch (e) {
-    console.error('Failed to load words', e)
+    pickRandomWord(true)
+  } catch (error) {
+    console.error('Failed to load daily words', error)
   } finally {
     loading.value = false
   }
-})
+}
 
-function back() { router.push(`/module/${moduleCode.value}`) }
-function flipCard() { isFlipped.value = !isFlipped.value }
-function nextWord() {
-  if (currentIndex.value < words.value.length - 1) {
-    currentIndex.value++
-    isFlipped.value = false
+function back() {
+  router.push('/modules')
+}
+
+function flipCard() {
+  isFlipped.value = !isFlipped.value
+}
+
+function pickRandomWord(resetHints = false) {
+  if (words.value.length === 0) {
+    currentWord.value = {}
     unknownMarked.value = false
+    blurMarked.value = false
+    return
+  }
+
+  const randomIndex = Math.floor(Math.random() * words.value.length)
+  currentWord.value = words.value[randomIndex]
+  isFlipped.value = false
+  if (resetHints) {
+    unknownMarked.value = false
+    blurMarked.value = false
   }
 }
-function prevWord() {
-  if (currentIndex.value > 0) {
-    currentIndex.value--
-    isFlipped.value = false
-    unknownMarked.value = false
+
+function removeCurrentWordFromPool() {
+  words.value = words.value.filter(item => String(item.id) !== String(currentWord.value.id))
+}
+
+function updateCurrentWordKnownCount(knownCount) {
+  words.value = words.value.map(item => (
+    String(item.id) === String(currentWord.value.id)
+      ? { ...item, knownCount }
+      : item
+  ))
+  currentWord.value = { ...currentWord.value, knownCount }
+}
+
+async function markAsKnown() {
+  if (!user || !currentWord.value?.id) return
+
+  unknownMarked.value = false
+  blurMarked.value = false
+  try {
+    const response = await markWordKnown(user.id, currentWord.value.id)
+    const progress = response.data.data
+    const nextKnownCount = progress?.knownCount ?? ((currentWord.value.knownCount || 0) + 1)
+
+    if (progress?.reviewReady) {
+      removeCurrentWordFromPool()
+    } else {
+      updateCurrentWordKnownCount(nextKnownCount)
+    }
+
+    pickRandomWord(true)
+  } catch (error) {
+    console.error('Failed to mark word known', error)
   }
 }
-function markAsUnknown() {
+
+function markAsBlur() {
+  if (!currentWord.value?.id) return
+  unknownMarked.value = false
+  blurMarked.value = true
+  pickRandomWord(false)
+}
+
+async function markAsUnknown() {
+  if (!currentWord.value?.id) return
+
+  blurMarked.value = false
   unknownMarked.value = true
   try {
-    const user = JSON.parse(sessionStorage.getItem('currentUser'))
-    if (user) {
-      submitWrongRecord({
-        userId: user.id,
-        questionType: 'WORD',
-        contentId: currentWord.value.id,
-        contentTitle: currentWord.value.word,
-        questionText: '单词 ' + currentWord.value.word + ' - ' + (currentWord.value.phonetic || ''),
-        userAnswer: '不认识',
-        correctAnswer: currentWord.value.meaning,
-        moduleCode: moduleCode.value
-      })
+    await submitWrongRecord({
+      userId: user?.id,
+      questionType: 'WORD',
+      contentId: currentWord.value.id,
+      contentTitle: currentWord.value.word,
+      questionText: '单词 ' + currentWord.value.word + ' - ' + (currentWord.value.phonetic || ''),
+      userAnswer: '不认识',
+      correctAnswer: currentWord.value.meaning,
+      moduleCode: currentWord.value.moduleCode
+    })
+
+    if ((currentWord.value.knownCount || 0) > 0) {
+      const response = await resetWordProgress(user.id, currentWord.value.id)
+      const progress = response.data.data
+      updateCurrentWordKnownCount(progress?.knownCount ?? 0)
     }
-  } catch {}
+  } catch (error) {
+    console.error('Failed to mark word unknown', error)
+  }
+
+  pickRandomWord(false)
 }
 </script>
 
@@ -123,12 +207,12 @@ function markAsUnknown() {
 .breadcrumb:hover { text-decoration: underline; }
 .practice-content h1 { font-size: 26px; color: #1a1a1a; margin-bottom: 24px; }
 .loading, .empty-tip { text-align: center; color: #999; padding: 60px; font-size: 16px; }
-.word-progress { margin-bottom: 24px; font-size: 14px; color: #666; }
+.word-progress { margin-bottom: 24px; font-size: 14px; color: #666; display: flex; flex-direction: column; gap: 8px; }
+.progress-meta { font-size: 12px; color: #94a3b8; }
 .progress-bar {
   height: 6px;
   background: #e0e0e0;
   border-radius: 3px;
-  margin-top: 8px;
 }
 .progress-fill {
   height: 100%;
@@ -170,50 +254,60 @@ function markAsUnknown() {
 .word-example { font-size: 15px; color: #666; text-align: center; line-height: 1.6; max-width: 500px; }
 .tap-hint { font-size: 13px; color: #bbb; margin-top: 20px; }
 .word-actions {
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
 }
-.btn-unknown {
-  padding: 10px 28px;
-  border: 2px solid #f59e0b;
-  border-radius: 10px;
+.word-action-btn {
+  min-width: 120px;
+  padding: 10px 18px;
+  border-radius: 999px;
   background: #fff;
-  color: #f59e0b;
   font-size: 15px;
   cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  font-weight: 700;
 }
-.btn-unknown:hover {
-  background: #fffbeb;
-  border-color: #d97706;
-  color: #d97706;
+.word-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
-.unknown-hint {
+.word-action-btn-known {
+  border: 1px solid #86efac;
+  color: #15803d;
+}
+.word-action-btn-known:hover {
+  background: #f0fdf4;
+}
+.word-action-btn-blur {
+  border: 1px solid #93c5fd;
+  color: #2563eb;
+}
+.word-action-btn-blur:hover {
+  background: #eff6ff;
+}
+.word-action-btn-unknown {
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+}
+.word-action-btn-unknown:hover {
+  background: #fef2f2;
+}
+.unknown-hint,
+.blur-hint,
+.known-hint {
+  text-align: center;
   font-size: 13px;
-  color: #16a34a;
   margin-top: 8px;
 }
-.word-nav {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+.unknown-hint { color: #dc2626; }
+.blur-hint { color: #2563eb; }
+.known-hint { color: #15803d; }
+@media (max-width: 768px) {
+  .word-action-btn {
+    width: 100%;
+  }
 }
-.word-nav button {
-  flex: 1;
-  padding: 14px;
-  border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  cursor: pointer;
-  background: #fff;
-  color: #333;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  transition: all 0.2s;
-}
-.word-nav button:hover:not(:disabled) {
-  background: #1a73e8;
-  color: #fff;
-}
-.word-nav button:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

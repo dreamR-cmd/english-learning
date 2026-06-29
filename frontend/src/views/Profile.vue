@@ -31,6 +31,13 @@
                 maxlength="20"
                 @keyup.enter="saveNickname"
               />
+              <input
+                v-model.number="dailyWordTargetInput"
+                class="daily-target-input"
+                type="number"
+                min="1"
+                max="100"
+              />
               <button class="btn-save" type="button" @click="saveNickname">保存</button>
               <button class="btn-cancel" type="button" @click="editingNickname = false">取消</button>
             </template>
@@ -41,6 +48,7 @@
           </div>
 
           <span class="username-tag">@{{ user?.username }}</span>
+          <span class="daily-target-text">每日单词练习：{{ user?.dailyWordTarget || 20 }} 个</span>
         </div>
       </div>
 
@@ -53,6 +61,16 @@
         >
           错题本
           <span v-if="wrongRecords.length" class="tab-count">{{ wrongRecords.length }}</span>
+        </button>
+
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'review' }"
+          type="button"
+          @click="activeTab = 'review'"
+        >
+          复习模块
+          <span v-if="reviewWords.length" class="tab-count">{{ reviewWords.length }}</span>
         </button>
 
         <button
@@ -115,6 +133,37 @@
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="activeTab === 'review'" class="tab-content">
+        <div v-if="loadingReview" class="loading">加载复习单词...</div>
+
+        <div v-else-if="reviewWords.length === 0" class="empty">
+          <div class="empty-icon">🧠</div>
+          <p>暂无复习单词</p>
+          <p class="empty-hint">单词在练习中累计认识 4 次后，会自动进入这里。</p>
+        </div>
+
+        <div v-else class="review-list">
+          <div
+            v-for="item in reviewWords"
+            :key="item.id"
+            class="review-item"
+          >
+            <div class="review-main">
+              <div class="review-header">
+                <h4 class="review-word">{{ item.word?.word || item.wordId }}</h4>
+                <span class="review-badge">已认识 {{ item.knownCount }}/4 次</span>
+              </div>
+              <p v-if="item.word?.phonetic" class="review-phonetic">{{ item.word.phonetic }}</p>
+              <p class="review-meaning">{{ item.word?.meaning || '暂无释义' }}</p>
+              <p v-if="item.word?.example" class="review-example">{{ item.word.example }}</p>
+            </div>
+            <button class="review-reset-btn" type="button" @click="markReviewWordUnknown(item)">
+              不认识
+            </button>
           </div>
         </div>
       </div>
@@ -335,7 +384,10 @@ import NavBar from '../components/NavBar.vue'
 import {
   getFavorites,
   getListeningsByModule,
+  getReviewWords,
   getModules,
+  markWordKnown as saveWordKnownProgress,
+  resetWordProgress,
   getReadingsByModule,
   getWordsByModule,
   getWrongRecords,
@@ -431,9 +483,12 @@ const currentAvatar = ref('👤')
 const showAvatarPicker = ref(false)
 const editingNickname = ref(false)
 const nicknameInput = ref('')
+const dailyWordTargetInput = ref(20)
 const wrongRecords = ref([])
 const favorites = ref([])
+const reviewWords = ref([])
 const loadingWrong = ref(true)
+const loadingReview = ref(true)
 const loadingFav = ref(true)
 const moduleNameMap = ref({})
 
@@ -555,6 +610,7 @@ function selectAvatar(avatar) {
 
 function startEditNickname() {
   nicknameInput.value = user.value?.nickname || user.value?.username || ''
+  dailyWordTargetInput.value = user.value?.dailyWordTarget || 20
   editingNickname.value = true
 }
 
@@ -562,14 +618,27 @@ async function saveNickname() {
   const nickname = nicknameInput.value.trim()
   if (!nickname || !user.value) return
 
+  const normalizedDailyTarget = Math.max(1, Math.min(100, Number(dailyWordTargetInput.value) || 20))
+
   try {
-    const response = await updateProfile(user.value.id, nickname)
+    const response = await updateProfile(user.value.id, nickname, normalizedDailyTarget)
     if (response.data.code === 200 && response.data.data) {
       persistUser({ ...response.data.data, avatar: currentAvatar.value })
     }
     editingNickname.value = false
   } catch (error) {
     console.error('Failed to update nickname', error)
+  }
+}
+
+async function markReviewWordUnknown(item) {
+  if (!user.value || !item?.wordId) return
+
+  try {
+    await resetWordProgress(user.value.id, item.wordId)
+    reviewWords.value = reviewWords.value.filter(word => word.wordId !== item.wordId)
+  } catch (error) {
+    console.error('Failed to reset review word', error)
   }
 }
 
@@ -781,12 +850,15 @@ function closeWrongDetail() {
 }
 
 async function markWordKnown() {
-  if (!user.value || !detailRecord.value?.id) return
+  if (!user.value || !detailRecord.value?.id || !detailRecord.value?.contentId) return
 
   wordKnownLoading.value = true
   try {
+    await saveWordKnownProgress(user.value.id, detailRecord.value.contentId)
     await removeWrongRecord(user.value.id, detailRecord.value.id)
     wrongRecords.value = wrongRecords.value.filter(item => item.id !== detailRecord.value.id)
+    const reviewResponse = await getReviewWords(user.value.id)
+    reviewWords.value = reviewResponse.data.data || []
     closeWrongDetail()
   } catch (error) {
     console.error('Failed to remove wrong record', error)
@@ -795,8 +867,16 @@ async function markWordKnown() {
   }
 }
 
-function markWordUnknown() {
+async function markWordUnknown() {
   wordMarkedUnknown.value = true
+  if (!user.value || !detailRecord.value?.contentId) return
+
+  try {
+    await resetWordProgress(user.value.id, detailRecord.value.contentId)
+    reviewWords.value = reviewWords.value.filter(item => item.wordId !== detailRecord.value.contentId)
+  } catch (error) {
+    console.error('Failed to reset word progress', error)
+  }
 }
 
 function toggleDetailWordCard() {
@@ -821,6 +901,7 @@ onMounted(async () => {
   if (user.value.avatar) {
     currentAvatar.value = user.value.avatar
   }
+  dailyWordTargetInput.value = user.value.dailyWordTarget || 20
 
   try {
     const moduleResponse = await getModules()
@@ -839,6 +920,15 @@ onMounted(async () => {
     // Ignore wrong record loading failures.
   } finally {
     loadingWrong.value = false
+  }
+
+  try {
+    const reviewResponse = await getReviewWords(user.value.id)
+    reviewWords.value = reviewResponse.data.data || []
+  } catch {
+    // Ignore review word loading failures.
+  } finally {
+    loadingReview.value = false
   }
 
   try {
@@ -946,6 +1036,13 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
+.daily-target-text {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
 .nickname-text {
   font-size: 24px;
   font-weight: 700;
@@ -977,11 +1074,26 @@ onMounted(async () => {
   width: 180px;
 }
 
+.daily-target-input {
+  padding: 6px 12px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  outline: none;
+  width: 130px;
+}
+
 .nickname-input::placeholder {
   color: rgba(255, 255, 255, 0.6);
 }
 
 .nickname-input:focus {
+  border-color: #fff;
+}
+
+.daily-target-input:focus {
   border-color: #fff;
 }
 
@@ -1237,6 +1349,87 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.review-word {
+  font-size: 18px;
+  color: #1f2937;
+  margin: 0;
+}
+
+.review-badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: #ecfdf5;
+  color: #15803d;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.review-phonetic {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.review-meaning {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.7;
+}
+
+.review-example {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.review-main {
+  flex: 1;
+}
+
+.review-reset-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1px solid #fca5a5;
+  border-radius: 999px;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.review-reset-btn:hover {
+  background: #fef2f2;
 }
 
 .favorite-item {
