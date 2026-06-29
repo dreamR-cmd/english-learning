@@ -45,6 +45,10 @@ export function getWrongRecords(userId) {
   return api.get('/user/wrong-records', { params: { userId } })
 }
 
+export function removeWrongRecord(userId, wrongRecordId) {
+  return api.delete(`/user/wrong-records/${wrongRecordId}`, { params: { userId } })
+}
+
 export function addFavorite(userId, readingId) {
   return api.post('/user/favorites', { userId, readingId })
 }

@@ -44,6 +44,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public void removeWrongRecord(Long userId, Long wrongRecordId) {
+        wrongRecordMapper.deleteByIdAndUserId(wrongRecordId, userId);
+    }
+
+    @Override
     public UserFavorite addFavorite(Long userId, Long readingId) {
         if (userFavoriteMapper.findByUserIdAndReadingId(userId, readingId).isPresent()) {
             return null;

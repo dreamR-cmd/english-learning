@@ -47,6 +47,16 @@ public class UserController {
         return ApiResult.success(userService.getWrongRecords(userId));
     }
 
+    @DeleteMapping("/wrong-records/{wrongRecordId}")
+    public ApiResult<Void> removeWrongRecord(@PathVariable Long wrongRecordId, @RequestParam Long userId) {
+        try {
+            userService.removeWrongRecord(userId, wrongRecordId);
+            return ApiResult.success("已移出错题本", null);
+        } catch (Exception e) {
+            return ApiResult.error(400, e.getMessage());
+        }
+    }
+
     @PostMapping("/favorites")
     public ApiResult<UserFavorite> addFavorite(@RequestBody Map<String, Object> body) {
         try {

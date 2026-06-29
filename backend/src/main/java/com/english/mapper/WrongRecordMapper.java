@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface WrongRecordMapper extends JpaRepository<WrongRecord, Long> {
     List<WrongRecord> findByUserIdOrderByCreatedAtDesc(Long userId);
+    void deleteByIdAndUserId(Long id, Long userId);
 }
