@@ -7,11 +7,14 @@ import com.english.mapper.ShopOrderMapper;
 import com.english.mapper.ShopProductMapper;
 import com.english.service.ShopService;
 import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class ShopServiceImpl implements ShopService {
+    private static final Logger log = LoggerFactory.getLogger(ShopServiceImpl.class);
     // Redis 中商品库存 key 的前缀，最终 key 形如：shop:product:stock:1
     private static final String STOCK_KEY_PREFIX = "shop:product:stock:";
 
@@ -64,7 +68,7 @@ public class ShopServiceImpl implements ShopService {
          * 1. 校验用户和商品。
          * 2. reserveStock：先扣 Redis，再扣数据库，防止高并发超卖。
          * 3. 创建待支付订单，设置 30 分钟过期时间。
-         * 4. 发送 RabbitMQ 延迟消息，到期后自动检查并取消未支付订单。
+         * 4. 尝试发送 RabbitMQ 延迟消息，到期后自动检查并取消未支付订单。
          *
          * 注意：这里把“占库存”和“创建订单”放在一个事务里处理数据库状态。
          * Redis 不参与数据库事务，所以创建订单失败时需要手动 restoreStock 回补 Redis 和数据库库存。
@@ -91,11 +95,18 @@ public class ShopServiceImpl implements ShopService {
             // 业务过期时间落库，支付时会再次校验，避免只依赖 MQ 消息。
             order.setExpireAt(LocalDateTime.now().plusMinutes(orderTimeoutMinutes));
             ShopOrder saved = orderMapper.save(order);
-            sendOrderTimeoutMessage(saved.getId());
+            trySendOrderTimeoutMessage(saved.getId());
             return saved;
         } catch (RuntimeException error) {
-            // 如果订单保存或发送消息失败，必须把前面占用的库存还回去。
-            restoreStock(productId);
+            /*
+             * 如果订单保存失败，当前 Hibernate Session 可能已经处于异常状态，
+             * 不能再在同一个事务里执行 JPA 查询或更新，否则会触发
+             * "don't flush the Session after an exception occurs"。
+             *
+             * 数据库扣库存和订单保存处于同一个事务，异常会整体回滚；这里只需要回补
+             * 不参与数据库事务的 Redis 库存。
+             */
+            restoreRedisStock(productId);
             throw error;
         }
     }
@@ -203,6 +214,10 @@ public class ShopServiceImpl implements ShopService {
         });
     }
 
+    private void restoreRedisStock(Long productId) {
+        redisTemplate.opsForValue().increment(stockKey(productId));
+    }
+
     private void syncStockFromRedis(ShopProduct product) {
         String stockKey = stockKey(product.getId());
         String cached = redisTemplate.opsForValue().get(stockKey);
@@ -237,6 +252,14 @@ public class ShopServiceImpl implements ShopService {
                 orderId,
                 processor
         );
+    }
+
+    private void trySendOrderTimeoutMessage(Long orderId) {
+        try {
+            sendOrderTimeoutMessage(orderId);
+        } catch (AmqpException error) {
+            log.warn("Failed to send timeout message for shop order {}", orderId, error);
+        }
     }
 
     private String stockKey(Long productId) {

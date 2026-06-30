@@ -77,7 +77,17 @@ function backToModules() {
 }
 
 async function selectProduct(product) {
-  if (!user.value || !product?.id || buyingProductId.value) return
+  if (buyingProductId.value) return
+
+  if (!user.value) {
+    errorMessage.value = '请先登录后再购买'
+    return
+  }
+
+  if (!product?.id) {
+    errorMessage.value = '商品信息异常，请刷新后重试'
+    return
+  }
 
   buyingProductId.value = product.id
   message.value = ''
@@ -92,7 +102,7 @@ async function selectProduct(product) {
     router.push({ path: '/orders', query: { status: 'pending' } })
   } catch (error) {
     console.error('Failed to create order', error)
-    errorMessage.value = '下单失败，请稍后重试'
+    errorMessage.value = error.response?.data?.message || '下单失败，请稍后重试'
   } finally {
     buyingProductId.value = null
   }
