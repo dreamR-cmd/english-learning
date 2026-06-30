@@ -36,18 +36,20 @@
         </div>
 
         <div class="word-actions">
-          <button class="word-action-btn word-action-btn-known" @click="markAsKnown">
-            {{ currentWord.knownCount >= 3 ? '认识并完成' : '认识' }}
+          <button class="word-action-btn word-action-btn-known" :disabled="saving" @click="markAsKnown">
+            {{ savingAction === 'known' ? '保存中...' : (currentWord.knownCount >= 3 ? '认识并完成' : '认识') }}
           </button>
-          <button class="word-action-btn word-action-btn-blur" @click="markAsBlur">
+          <button class="word-action-btn word-action-btn-blur" :disabled="saving" @click="markAsBlur">
             模糊
           </button>
-          <button class="word-action-btn word-action-btn-unknown" @click="markAsUnknown">
-            不认识
+          <button class="word-action-btn word-action-btn-unknown" :disabled="saving" @click="markAsUnknown">
+            {{ savingAction === 'unknown' ? '保存中...' : '不认识' }}
           </button>
         </div>
 
-        <p v-if="unknownMarked" class="unknown-hint">已记录到错题本，并重置认识次数</p>
+        <p v-if="saveMessage" class="save-hint">{{ saveMessage }}</p>
+        <p v-else-if="saveError" class="save-error">{{ saveError }}</p>
+        <p v-else-if="unknownMarked" class="unknown-hint">已记录到错题本，并重置认识次数</p>
         <p v-else-if="blurMarked" class="blur-hint">已标记为模糊，本次不计认识次数</p>
         <p class="known-hint">当前累计认识 {{ currentWord.knownCount || 0 }} / 4 次</p>
       </div>
@@ -60,16 +62,21 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '../components/NavBar.vue'
 import { getDailyWords, markWordKnown, resetWordProgress, submitWrongRecord } from '../utils/api'
+import { currentUser } from '../utils/currentUser'
 
 const router = useRouter()
-const user = readCurrentUser()
+const user = currentUser
 
 const words = ref([])
 const loading = ref(true)
+const savingAction = ref('')
+const saveMessage = ref('')
+const saveError = ref('')
 const isFlipped = ref(false)
 const unknownMarked = ref(false)
 const blurMarked = ref(false)
 const currentWord = ref({})
+const saving = computed(() => Boolean(savingAction.value))
 const progressPercent = computed(() =>
   words.value.length > 0 ? Math.min(100, ((currentWord.value.knownCount || 0) / 4) * 100) : 0
 )
@@ -78,22 +85,14 @@ onMounted(async () => {
   await loadDailyWords()
 })
 
-function readCurrentUser() {
-  try {
-    return JSON.parse(sessionStorage.getItem('currentUser'))
-  } catch {
-    return null
-  }
-}
-
 async function loadDailyWords() {
-  if (!user) {
+  if (!user.value) {
     loading.value = false
     return
   }
 
   try {
-    const res = await getDailyWords(user.id)
+    const res = await getDailyWords(user.value.id)
     words.value = res.data.data || []
     pickRandomWord(true)
   } catch (error) {
@@ -142,12 +141,16 @@ function updateCurrentWordKnownCount(knownCount) {
 }
 
 async function markAsKnown() {
-  if (!user || !currentWord.value?.id) return
+  if (!user.value || !currentWord.value?.id || saving.value) return
 
   unknownMarked.value = false
   blurMarked.value = false
+  saveMessage.value = ''
+  saveError.value = ''
+  savingAction.value = 'known'
+
   try {
-    const response = await markWordKnown(user.id, currentWord.value.id)
+    const response = await markWordKnown(user.value.id, currentWord.value.id)
     const progress = response.data.data
     const nextKnownCount = progress?.knownCount ?? ((currentWord.value.knownCount || 0) + 1)
 
@@ -157,27 +160,37 @@ async function markAsKnown() {
       updateCurrentWordKnownCount(nextKnownCount)
     }
 
+    saveMessage.value = progress?.reviewReady ? '已保存，单词进入复习列表' : '已保存认识进度'
     pickRandomWord(true)
   } catch (error) {
     console.error('Failed to mark word known', error)
+    saveError.value = '保存失败，请稍后重试'
+  } finally {
+    savingAction.value = ''
   }
 }
 
 function markAsBlur() {
-  if (!currentWord.value?.id) return
+  if (!currentWord.value?.id || saving.value) return
   unknownMarked.value = false
   blurMarked.value = true
+  saveMessage.value = ''
+  saveError.value = ''
   pickRandomWord(false)
 }
 
 async function markAsUnknown() {
-  if (!currentWord.value?.id) return
+  if (!user.value || !currentWord.value?.id || saving.value) return
 
   blurMarked.value = false
   unknownMarked.value = true
+  saveMessage.value = ''
+  saveError.value = ''
+  savingAction.value = 'unknown'
+
   try {
     await submitWrongRecord({
-      userId: user?.id,
+      userId: user.value.id,
       questionType: 'WORD',
       contentId: currentWord.value.id,
       contentTitle: currentWord.value.word,
@@ -188,15 +201,20 @@ async function markAsUnknown() {
     })
 
     if ((currentWord.value.knownCount || 0) > 0) {
-      const response = await resetWordProgress(user.id, currentWord.value.id)
+      const response = await resetWordProgress(user.value.id, currentWord.value.id)
       const progress = response.data.data
       updateCurrentWordKnownCount(progress?.knownCount ?? 0)
     }
+
+    saveMessage.value = '已保存到错题本'
+    pickRandomWord(false)
   } catch (error) {
     console.error('Failed to mark word unknown', error)
+    unknownMarked.value = false
+    saveError.value = '保存失败，请稍后重试'
+  } finally {
+    savingAction.value = ''
   }
-
-  pickRandomWord(false)
 }
 </script>
 
@@ -274,6 +292,12 @@ async function markAsUnknown() {
   transform: translateY(-1px);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
+.word-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+  box-shadow: none;
+}
 .word-action-btn-known {
   border: 1px solid #86efac;
   color: #15803d;
@@ -297,6 +321,8 @@ async function markAsUnknown() {
 }
 .unknown-hint,
 .blur-hint,
+.save-hint,
+.save-error,
 .known-hint {
   text-align: center;
   font-size: 13px;
@@ -304,6 +330,8 @@ async function markAsUnknown() {
 }
 .unknown-hint { color: #dc2626; }
 .blur-hint { color: #2563eb; }
+.save-hint { color: #15803d; }
+.save-error { color: #dc2626; }
 .known-hint { color: #15803d; }
 @media (max-width: 768px) {
   .word-action-btn {

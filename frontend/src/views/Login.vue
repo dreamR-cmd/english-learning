@@ -27,10 +27,11 @@
    </div>
  </template>
  
- <script setup>
- import { ref, reactive } from 'vue'
- import { useRouter } from 'vue-router'
- import { login, register } from '../utils/api'
+<script setup>
+import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { login, register } from '../utils/api'
+import { setCurrentUser } from '../utils/currentUser'
  
  const router = useRouter()
  const isLogin = ref(true)
@@ -42,13 +43,13 @@
    loading.value = true
    errorMsg.value = ''
    try {
-     const res = isLogin.value
-       ? await login(form.username, form.password)
-       : await register(form.username, form.password)
-     if (res.data.code === 200) {
-       sessionStorage.setItem('currentUser', JSON.stringify(res.data.data))
-       router.push('/modules')
-     } else {
+      const res = isLogin.value
+        ? await login(form.username, form.password)
+        : await register(form.username, form.password)
+      if (res.data.code === 200) {
+        setCurrentUser(res.data.data)
+        router.push('/modules')
+      } else {
        errorMsg.value = res.data.message
      }
    } catch (e) {

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { readStoredCurrentUser } from '../utils/currentUser'
 
 const routes = [
   {
@@ -43,6 +44,36 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: () => import('../views/Profile.vue')
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../views/Settings.vue')
+  },
+  {
+    path: '/shop',
+    name: 'Shop',
+    component: () => import('../views/Shop.vue')
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: () => import('../views/Orders.vue')
+  },
+  {
+    path: '/wrong-records',
+    name: 'WrongRecords',
+    component: () => import('../views/WrongRecords.vue')
+  },
+  {
+    path: '/review-words',
+    name: 'ReviewWords',
+    component: () => import('../views/ReviewWords.vue')
+  },
+  {
+    path: '/favorites',
+    name: 'Favorites',
+    component: () => import('../views/Favorites.vue')
   }
 ]
 
@@ -52,7 +83,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const user = sessionStorage.getItem('currentUser')
+  const user = readStoredCurrentUser()
   if (to.name !== 'Login' && !user) {
     next({ name: 'Login' })
   } else {

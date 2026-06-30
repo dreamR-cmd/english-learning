@@ -5,204 +5,40 @@
     <div class="profile-content">
       <div class="user-card">
         <div class="avatar-section">
-          <div class="avatar-display" @click="showAvatarPicker = !showAvatarPicker">
-            {{ currentAvatar }}
-          </div>
-
-          <div v-if="showAvatarPicker" class="avatar-picker">
-            <span
-              v-for="avatar in avatarOptions"
-              :key="avatar"
-              class="avatar-option"
-              :class="{ active: avatar === currentAvatar }"
-              @click="selectAvatar(avatar)"
-            >
-              {{ avatar }}
-            </span>
+          <div class="avatar-display">
+            {{ user?.avatar || '👤' }}
           </div>
         </div>
 
         <div class="user-details">
           <div class="nickname-row">
-            <template v-if="editingNickname">
-              <input
-                v-model="nicknameInput"
-                class="nickname-input"
-                maxlength="20"
-                @keyup.enter="saveNickname"
-              />
-              <input
-                v-model.number="dailyWordTargetInput"
-                class="daily-target-input"
-                type="number"
-                min="1"
-                max="100"
-              />
-              <button class="btn-save" type="button" @click="saveNickname">保存</button>
-              <button class="btn-cancel" type="button" @click="editingNickname = false">取消</button>
-            </template>
-            <template v-else>
-              <span class="nickname-text">{{ user?.nickname || user?.username }}</span>
-              <button class="btn-edit" type="button" @click="startEditNickname">编辑</button>
-            </template>
+            <span class="nickname-text">{{ user?.nickname || user?.username }}</span>
+            <button class="btn-settings" type="button" @click="openSettings">设置</button>
           </div>
 
           <span class="username-tag">@{{ user?.username }}</span>
           <span class="daily-target-text">每日单词练习：{{ user?.dailyWordTarget || 20 }} 个</span>
+          <p class="profile-summary">头像、昵称和每日单词练习设置已迁移到设置页统一管理。</p>
         </div>
       </div>
 
-      <div class="tabs">
+      <section class="feature-summary">
         <button
-          class="tab-btn"
-          :class="{ active: activeTab === 'wrong' }"
+          v-for="item in featureCards"
+          :key="item.key"
+          class="feature-card"
           type="button"
-          @click="activeTab = 'wrong'"
+          @click="openFeature(item)"
         >
-          错题本
-          <span v-if="wrongRecords.length" class="tab-count">{{ wrongRecords.length }}</span>
+          <span class="feature-icon">{{ item.icon }}</span>
+          <span class="feature-main">
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.description }}</small>
+          </span>
+          <span v-if="item.count !== null" class="feature-count">{{ item.count }}</span>
         </button>
+      </section>
 
-        <button
-          class="tab-btn"
-          :class="{ active: activeTab === 'review' }"
-          type="button"
-          @click="activeTab = 'review'"
-        >
-          复习模块
-          <span v-if="reviewWords.length" class="tab-count">{{ reviewWords.length }}</span>
-        </button>
-
-        <button
-          class="tab-btn"
-          :class="{ active: activeTab === 'favorites' }"
-          type="button"
-          @click="activeTab = 'favorites'"
-        >
-          收藏夹
-          <span v-if="favorites.length" class="tab-count">{{ favorites.length }}</span>
-        </button>
-      </div>
-
-      <div v-if="activeTab === 'wrong'" class="tab-content">
-        <div v-if="loadingWrong" class="loading">加载错题...</div>
-
-        <div v-else-if="wrongRecords.length === 0" class="empty">
-          <div class="empty-icon">📘</div>
-          <p>暂无错题记录</p>
-          <p class="empty-hint">去练习模块做几道题吧，做错的题目会自动收录到这里。</p>
-        </div>
-
-        <div v-else class="wrong-list">
-          <div v-for="group in groupedWrongRecords" :key="group.moduleCode" class="wrong-group">
-            <div class="group-header">
-              <span>{{ moduleNameMap[group.moduleCode] || formatModuleCode(group.moduleCode) }}</span>
-              <span class="group-badge">{{ group.records.length }} 题</span>
-            </div>
-
-            <div
-              v-for="record in group.records"
-              :key="record.id"
-              class="wrong-item"
-              :class="{ clickable: canOpenWrongDetail(record) }"
-              @click="handleWrongRecordClick(record)"
-            >
-              <div class="wrong-item-header">
-                <span class="wrong-type-badge" :class="'type-' + String(record.questionType || '').toLowerCase()">
-                  {{ typeLabel(record.questionType) }}
-                </span>
-                <span v-if="record.contentTitle" class="wrong-content-title">{{ record.contentTitle }}</span>
-                <span class="wrong-time">{{ formatTime(record.createdAt) }}</span>
-              </div>
-
-              <p class="wrong-question">{{ record.questionText }}</p>
-
-              <div class="wrong-item-footer">
-                <div class="wrong-answers">
-                  <span class="answer-label wrong-answer">我的答案：{{ record.userAnswer || '-' }}</span>
-                  <span class="answer-label correct-answer">正确答案：{{ record.correctAnswer || '-' }}</span>
-                </div>
-
-                <button
-                  v-if="canOpenWrongDetail(record)"
-                  class="btn-view-question"
-                  type="button"
-                  @click.stop="openWrongDetail(record)"
-                >
-                  {{ detailActionLabel(record) }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="activeTab === 'review'" class="tab-content">
-        <div v-if="loadingReview" class="loading">加载复习单词...</div>
-
-        <div v-else-if="reviewWords.length === 0" class="empty">
-          <div class="empty-icon">🧠</div>
-          <p>暂无复习单词</p>
-          <p class="empty-hint">单词在练习中累计认识 4 次后，会自动进入这里。</p>
-        </div>
-
-        <div v-else class="review-list">
-          <div
-            v-for="item in reviewWords"
-            :key="item.id"
-            class="review-item"
-          >
-            <div class="review-main">
-              <div class="review-header">
-                <h4 class="review-word">{{ item.word?.word || item.wordId }}</h4>
-                <span class="review-badge">已认识 {{ item.knownCount }}/4 次</span>
-              </div>
-              <p v-if="item.word?.phonetic" class="review-phonetic">{{ item.word.phonetic }}</p>
-              <p class="review-meaning">{{ item.word?.meaning || '暂无释义' }}</p>
-              <p v-if="item.word?.example" class="review-example">{{ item.word.example }}</p>
-            </div>
-            <button class="review-reset-btn" type="button" @click="markReviewWordUnknown(item)">
-              不认识
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="activeTab === 'favorites'" class="tab-content">
-        <div v-if="loadingFav" class="loading">加载收藏...</div>
-
-        <div v-else-if="favorites.length === 0" class="empty">
-          <div class="empty-icon">📚</div>
-          <p>暂无收藏</p>
-          <p class="empty-hint">在模块详情页的精选阅读中点击收藏即可保存喜欢的文章。</p>
-        </div>
-
-        <div v-else class="favorite-list">
-          <div
-            v-for="favorite in favorites"
-            :key="favorite.id"
-            class="favorite-item"
-            @click="goToReading(favorite.reading)"
-          >
-            <div class="fav-main">
-              <h4 class="fav-title">{{ favorite.reading?.title }}</h4>
-              <p class="fav-preview">{{ favorite.reading?.content?.substring(0, 120) }}...</p>
-              <div class="fav-meta">
-                <span class="fav-module">{{ getModuleName(favorite.reading) }}</span>
-                <span class="fav-time">{{ formatTime(favorite.createdAt) }}</span>
-              </div>
-            </div>
-
-            <button
-              class="btn-unfav"
-              type="button"
-              @click.stop="handleRemoveFavorite(favorite.readingId)"
-            >
-              取消收藏
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <Teleport to="body">
@@ -392,24 +228,11 @@ import {
   getWordsByModule,
   getWrongRecords,
   removeWrongRecord,
-  removeFavorite,
-  updateProfile
+  removeFavorite
 } from '../utils/api'
+import { currentUser } from '../utils/currentUser'
 
 const router = useRouter()
-
-function readCurrentUser() {
-  try {
-    return JSON.parse(sessionStorage.getItem('currentUser'))
-  } catch {
-    return null
-  }
-}
-
-function persistUser(nextUser) {
-  user.value = nextUser
-  sessionStorage.setItem('currentUser', JSON.stringify(nextUser))
-}
 
 function parseQuestions(questions) {
   try {
@@ -477,13 +300,8 @@ function browserSupportsSpeech() {
     && 'SpeechSynthesisUtterance' in window
 }
 
-const user = ref(readCurrentUser())
+const user = currentUser
 const activeTab = ref('wrong')
-const currentAvatar = ref('👤')
-const showAvatarPicker = ref(false)
-const editingNickname = ref(false)
-const nicknameInput = ref('')
-const dailyWordTargetInput = ref(20)
 const wrongRecords = ref([])
 const favorites = ref([])
 const reviewWords = ref([])
@@ -511,11 +329,6 @@ const detailWordFlipped = ref(false)
 const readingCache = new Map()
 const listeningCache = new Map()
 const wordCache = new Map()
-
-const avatarOptions = [
-  '👤', '😊', '🎓', '📚', '🌟', '💪', '🧠', '🐱',
-  '🐶', '🦊', '🐼', '🐨', '🌻', '🍀', '🎯', '🚀'
-]
 
 const typeLabelMap = {
   READING: '阅读理解',
@@ -564,6 +377,36 @@ const groupedWrongRecords = computed(() => {
 
   return Object.values(groups)
 })
+const featureCards = computed(() => [
+  {
+    key: 'wrong',
+    icon: '📘',
+    title: '错题本',
+    description: '归纳阅读、听力和单词错题',
+    count: wrongRecords.value.length
+  },
+  {
+    key: 'review',
+    icon: '🧠',
+    title: '复习模块',
+    description: '集中复习已达标单词',
+    count: reviewWords.value.length
+  },
+  {
+    key: 'favorites',
+    icon: '⭐',
+    title: '收藏夹',
+    description: '保存喜欢的精选阅读',
+    count: favorites.value.length
+  },
+  {
+    key: 'orders',
+    icon: '🧾',
+    title: '我的订单',
+    description: '查看全部、待支付、已支付订单',
+    count: null
+  }
+])
 const detailOptions = computed(() => {
   return Array.isArray(detailQuestion.value?.options) ? detailQuestion.value.options : []
 })
@@ -599,36 +442,19 @@ function getModuleName(reading) {
   return reading.module.name || reading.module.code || ''
 }
 
-function selectAvatar(avatar) {
-  currentAvatar.value = avatar
-  showAvatarPicker.value = false
-
-  if (user.value) {
-    persistUser({ ...user.value, avatar })
-  }
+function openSettings() {
+  router.push('/settings')
 }
 
-function startEditNickname() {
-  nicknameInput.value = user.value?.nickname || user.value?.username || ''
-  dailyWordTargetInput.value = user.value?.dailyWordTarget || 20
-  editingNickname.value = true
-}
-
-async function saveNickname() {
-  const nickname = nicknameInput.value.trim()
-  if (!nickname || !user.value) return
-
-  const normalizedDailyTarget = Math.max(1, Math.min(100, Number(dailyWordTargetInput.value) || 20))
-
-  try {
-    const response = await updateProfile(user.value.id, nickname, normalizedDailyTarget)
-    if (response.data.code === 200 && response.data.data) {
-      persistUser({ ...response.data.data, avatar: currentAvatar.value })
-    }
-    editingNickname.value = false
-  } catch (error) {
-    console.error('Failed to update nickname', error)
+function openFeature(item) {
+  const pathMap = {
+    wrong: '/wrong-records',
+    review: '/review-words',
+    favorites: '/favorites',
+    orders: '/orders'
   }
+
+  router.push(pathMap[item.key] || '/profile')
 }
 
 async function markReviewWordUnknown(item) {
@@ -898,11 +724,6 @@ onBeforeUnmount(() => {
 onMounted(async () => {
   if (!user.value) return
 
-  if (user.value.avatar) {
-    currentAvatar.value = user.value.avatar
-  }
-  dailyWordTargetInput.value = user.value.dailyWordTarget || 20
-
   try {
     const moduleResponse = await getModules()
     const modules = moduleResponse.data.data || []
@@ -966,7 +787,6 @@ onMounted(async () => {
 }
 
 .avatar-section {
-  position: relative;
   flex-shrink: 0;
 }
 
@@ -979,47 +799,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   font-size: 44px;
-  cursor: pointer;
-  transition: all 0.2s;
   border: 3px solid rgba(255, 255, 255, 0.5);
-}
-
-.avatar-display:hover {
-  background: rgba(255, 255, 255, 0.35);
-  transform: scale(1.05);
-}
-
-.avatar-picker {
-  position: absolute;
-  top: 90px;
-  left: 0;
-  background: #fff;
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  z-index: 10;
-  min-width: 200px;
-}
-
-.avatar-option {
-  font-size: 28px;
-  padding: 6px;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.15s;
-}
-
-.avatar-option:hover {
-  background: #f0f7ff;
-}
-
-.avatar-option.active {
-  background: #e3f0ff;
-  box-shadow: inset 0 0 0 2px #1a73e8;
 }
 
 .user-details {
@@ -1043,92 +823,107 @@ onMounted(async () => {
   opacity: 0.9;
 }
 
+.profile-summary {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .nickname-text {
   font-size: 24px;
   font-weight: 700;
 }
 
-.btn-edit {
+.btn-settings {
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: #fff;
-  border-radius: 6px;
-  padding: 4px 10px;
+  border-radius: 999px;
+  padding: 6px 12px;
   cursor: pointer;
   font-size: 13px;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s;
 }
 
-.btn-edit:hover {
+.btn-settings:hover {
   background: rgba(255, 255, 255, 0.35);
-}
-
-.nickname-input {
-  padding: 6px 12px;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  font-size: 18px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  outline: none;
-  width: 180px;
-}
-
-.daily-target-input {
-  padding: 6px 12px;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  font-size: 16px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  outline: none;
-  width: 130px;
-}
-
-.nickname-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.nickname-input:focus {
-  border-color: #fff;
-}
-
-.daily-target-input:focus {
-  border-color: #fff;
-}
-
-.btn-save,
-.btn-cancel {
-  padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
-}
-
-.btn-save {
-  background: #fff;
-  color: #1a73e8;
-  font-weight: 600;
-}
-
-.btn-save:hover {
-  background: #e8f0fe;
-}
-
-.btn-cancel {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-.btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
 }
 
 .username-tag {
   font-size: 14px;
   opacity: 0.75;
+}
+
+.feature-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.feature-card {
+  border: 1px solid #e5edf8;
+  border-radius: 16px;
+  background: #fff;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  border-color: #1a73e8;
+  box-shadow: 0 10px 24px rgba(26, 115, 232, 0.12);
+}
+
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #f0f7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.feature-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feature-main strong {
+  color: #1f2937;
+  font-size: 15px;
+}
+
+.feature-main small {
+  color: #7b8794;
+  line-height: 1.5;
+}
+
+.feature-count {
+  min-width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #edf4ff;
+  color: #1a73e8;
+  font-size: 13px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tabs {
@@ -1941,6 +1736,10 @@ onMounted(async () => {
 
   .tabs {
     flex-direction: column;
+  }
+
+  .feature-summary {
+    grid-template-columns: 1fr;
   }
 
   .favorite-item {

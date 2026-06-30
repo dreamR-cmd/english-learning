@@ -8,6 +8,18 @@
        </div>
        <div v-if="loading" class="loading">加载中...</div>
        <div v-else class="modules-grid">
+         <div class="module-card shop-card" @click="goToShop">
+           <span class="module-icon">🛒</span>
+           <h3>学习商城</h3>
+           <p class="module-desc">精选课程、真题资料与备考书籍，配合等级考试模块系统学习。</p>
+           <div class="countdown-panel shop-panel">
+             <div class="countdown-meta">
+               <span class="countdown-label">精选商品</span>
+               <span class="countdown-date">课程 / 图书</span>
+             </div>
+             <div class="countdown-value">进入商城</div>
+           </div>
+         </div>
          <div
            v-for="mod in modulesWithCountdown"
            :key="mod.id"
@@ -71,6 +83,10 @@
  function goToModule(code) {
    router.push(`/module/${code}`)
  }
+
+ function goToShop() {
+   router.push('/shop')
+ }
  </script>
  
  <style scoped>
@@ -124,6 +140,16 @@
    box-shadow: 0 12px 32px rgba(0,0,0,0.1);
    border-color: #1a73e8;
  }
+ .shop-card {
+   background:
+     linear-gradient(135deg, rgba(255, 248, 229, 0.96), rgba(255, 255, 255, 0.98)),
+     #fff;
+   border-color: #f3d28b;
+ }
+ .shop-card:hover {
+   border-color: #f59e0b;
+   box-shadow: 0 14px 34px rgba(180, 83, 9, 0.16);
+ }
  .module-icon {
    font-size: 48px;
    display: block;
@@ -171,4 +197,12 @@
  .countdown-value.urgent {
    color: #d93025;
   }
+ .shop-panel {
+   background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+   border-color: #fed7aa;
+ }
+ .shop-panel .countdown-date,
+ .shop-panel .countdown-value {
+   color: #b45309;
+ }
  </style>

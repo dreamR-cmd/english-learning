@@ -85,4 +85,20 @@ export function getReviewWords(userId) {
   return api.get('/user/word-progress/review', { params: { userId } })
 }
 
+export function getShopProducts() {
+  return api.get('/shop/products')
+}
+
+export function createShopOrder(userId, productId) {
+  return api.post('/shop/orders', { userId, productId })
+}
+
+export function getShopOrders(userId, status = 'all') {
+  return api.get('/shop/orders', { params: { userId, status } })
+}
+
+export function payShopOrder(userId, orderId) {
+  return api.post(`/shop/orders/${orderId}/pay`, { userId })
+}
+
 export default api
