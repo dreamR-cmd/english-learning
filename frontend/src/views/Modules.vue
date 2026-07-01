@@ -1,11 +1,12 @@
  <template>
    <div class="modules-page">
      <NavBar />
-     <div class="modules-content">
-       <div class="page-header">
-         <h1>选择学习等级</h1>
-         <p>Choose Your English Learning Level</p>
-       </div>
+     <main class="modules-content">
+       <!-- <section class="page-hero">
+         <p class="page-kicker">Learning Hub</p>
+         <h1>学习中心</h1>
+         <p>等级考试、学习商城和精选读物统一入口，按目标选择学习路径。</p>
+       </section> -->
        <div v-if="loading" class="loading">加载中...</div>
        <div v-else class="modules-grid">
          <div class="module-card shop-card" @click="goToShop">
@@ -18,6 +19,18 @@
                <span class="countdown-date">课程 / 图书</span>
              </div>
              <div class="countdown-value">进入商城</div>
+           </div>
+         </div>
+         <div class="module-card selected-reading-card" @click="goToSelectedReadings">
+           <span class="module-icon">📚</span>
+           <h3>精选读物</h3>
+           <p class="module-desc">独立于阅读理解题库，整理适合英语学习者的分级读物和公版经典。</p>
+           <div class="countdown-panel reading-panel">
+             <div class="countdown-meta">
+               <span class="countdown-label">外部读物</span>
+               <span class="countdown-date">分级 / 经典</span>
+             </div>
+             <div class="countdown-value">开始阅读</div>
            </div>
          </div>
          <div
@@ -43,7 +56,7 @@
            </div>
          </div>
        </div>
-     </div>
+     </main>
    </div>
  </template>
  
@@ -87,30 +100,54 @@
  function goToShop() {
    router.push('/shop')
  }
+
+ function goToSelectedReadings() {
+   router.push('/selected-readings')
+ }
  </script>
  
  <style scoped>
  .modules-page {
    min-height: 100vh;
-   background: #f0f2f5;
+   background:
+     radial-gradient(circle at 10% 8%, rgba(34, 197, 94, 0.16), transparent 28%),
+     radial-gradient(circle at 88% 10%, rgba(245, 158, 11, 0.16), transparent 26%),
+     linear-gradient(180deg, #f7faf5 0%, #f5f7fb 100%);
  }
  .modules-content {
    max-width: 1200px;
    margin: 0 auto;
-   padding: 40px 24px;
+   padding: 36px 24px 56px;
  }
- .page-header {
-   text-align: center;
-   margin-bottom: 48px;
+ .page-hero {
+   margin-bottom: 28px;
+   border-radius: 28px;
+   padding: 38px;
+   background:
+     linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(240, 253, 244, 0.88)),
+     #fff;
+   border: 1px solid rgba(148, 163, 184, 0.22);
+   box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
  }
- .page-header h1 {
-   font-size: 32px;
-   color: #1a1a1a;
-   margin-bottom: 8px;
+ .page-kicker {
+   color: #15803d;
+   font-size: 12px;
+   font-weight: 900;
+   letter-spacing: 0.18em;
+   text-transform: uppercase;
+   margin-bottom: 10px;
  }
- .page-header p {
-   color: #999;
+ .page-hero h1 {
+   color: #102018;
+   font-size: clamp(34px, 7vw, 72px);
+   line-height: 0.95;
+   margin-bottom: 18px;
+ }
+ .page-hero p:last-child {
+   max-width: 680px;
+   color: #526057;
    font-size: 16px;
+   line-height: 1.9;
  }
  .loading {
    text-align: center;
@@ -124,21 +161,21 @@
    gap: 24px;
  }
  .module-card {
-   background: #fff;
-   border-radius: 12px;
+   background: rgba(255, 255, 255, 0.92);
+   border-radius: 24px;
    padding: 32px 24px;
    display: flex;
    flex-direction: column;
    text-align: center;
    cursor: pointer;
    transition: all 0.3s ease;
-   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-   border: 2px solid transparent;
+   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+   border: 1px solid rgba(226, 232, 240, 0.96);
  }
  .module-card:hover {
-   transform: translateY(-4px);
-   box-shadow: 0 12px 32px rgba(0,0,0,0.1);
-   border-color: #1a73e8;
+   transform: translateY(-5px);
+   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+   border-color: #86efac;
  }
  .shop-card {
    background:
@@ -157,12 +194,12 @@
  }
  .module-card h3 {
    font-size: 20px;
-   color: #1a1a1a;
+   color: #102018;
    margin-bottom: 8px;
  }
  .module-desc {
    font-size: 13px;
-   color: #888;
+   color: #526057;
    line-height: 1.6;
    min-height: 42px;
    margin-bottom: 18px;
@@ -170,7 +207,7 @@
  .countdown-panel {
    margin-top: auto;
    padding: 14px 16px;
-   border-radius: 10px;
+   border-radius: 16px;
    background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%);
    border: 1px solid #dbe8ff;
  }
@@ -186,13 +223,13 @@
    color: #5f6b7a;
  }
  .countdown-date {
-   color: #1a73e8;
+   color: #15803d;
    font-weight: 600;
  }
  .countdown-value {
    font-size: 18px;
    font-weight: 700;
-   color: #153a73;
+   color: #102018;
  }
  .countdown-value.urgent {
    color: #d93025;
@@ -204,5 +241,32 @@
  .shop-panel .countdown-date,
  .shop-panel .countdown-value {
    color: #b45309;
+ }
+ .selected-reading-card {
+   background:
+     radial-gradient(circle at top left, rgba(34, 197, 94, 0.16), transparent 34%),
+     linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(255, 255, 255, 0.98)),
+     #fff;
+   border-color: #bbf7d0;
+ }
+ .selected-reading-card:hover {
+   border-color: #16a34a;
+   box-shadow: 0 14px 34px rgba(22, 101, 52, 0.14);
+ }
+ .reading-panel {
+   background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+   border-color: #bbf7d0;
+ }
+ .reading-panel .countdown-date,
+ .reading-panel .countdown-value {
+   color: #15803d;
+ }
+ @media (max-width: 720px) {
+   .modules-content {
+     padding: 24px 16px 40px;
+   }
+   .page-hero {
+     padding: 26px;
+   }
  }
  </style>

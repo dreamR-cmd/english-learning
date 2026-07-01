@@ -3,7 +3,7 @@
     <div class="navbar-inner">
       <div class="navbar-left">
         <router-link to="/modules" class="logo">📚 英语学习平台</router-link>
-        <router-link to="/shop" class="nav-link">商城</router-link>
+        <!-- <router-link to="/shop" class="nav-link">商城</router-link> -->
       </div>
 
       <div class="navbar-right">

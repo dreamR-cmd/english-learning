@@ -5,7 +5,7 @@ spring:
     url: ${DB_URL:jdbc:mysql://localhost:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true}
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    password: ${DB_PASSWORD:123456}
   h2:
     console:
       enabled: false
@@ -36,4 +36,4 @@ spring:
           max-attempts: 3
 shop:
   order:
-    timeout-minutes: ${ORDER_TIMEOUT_MINUTES:30}
+    timeout-minutes: ${ORDER_TIMEOUT_MINUTES:1}

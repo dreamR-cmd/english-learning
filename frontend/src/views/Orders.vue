@@ -19,15 +19,16 @@
           type="button"
           class="status-tab"
           :class="{ active: activeStatus === tab.key }"
-          @click="activeStatus = tab.key"
+          :disabled="loading && activeStatus === tab.key"
+          @click="switchStatus(tab.key)"
         >
           {{ tab.label }}
-          <span>{{ orderCount(tab.key) }}</span>
+          <span v-if="activeStatus === tab.key">{{ orders.length }}</span>
         </button>
       </section>
 
-      <section v-if="filteredOrders.length" class="order-list">
-        <article v-for="order in filteredOrders" :key="order.id" class="order-card">
+      <section v-if="orders.length" class="order-list">
+        <article v-for="order in orders" :key="order.id" class="order-card">
           <div class="order-main">
             <div class="order-cover">{{ order.icon || '🧾' }}</div>
             <div class="order-info">
@@ -94,21 +95,11 @@ const tabs = [
   { key: 'paid', label: '已支付' }
 ]
 
-const filteredOrders = computed(() => {
-  if (activeStatus.value === 'all') return orders.value
-  return orders.value.filter(order => order.status === activeStatus.value)
-})
-
 const emptyText = computed(() => {
   if (activeStatus.value === 'pending') return '暂无待支付订单'
   if (activeStatus.value === 'paid') return '暂无已支付订单'
   return '暂无订单'
 })
-
-function orderCount(status) {
-  if (status === 'all') return orders.value.length
-  return orders.value.filter(order => order.status === status).length
-}
 
 function statusLabel(status) {
   if (status === 'canceled') return '已取消'
@@ -122,7 +113,7 @@ async function markPaid(order) {
   try {
     const response = await payShopOrder(user.value.id, order.id)
     if (response.data.code === 200 && response.data.data) {
-      orders.value = orders.value.map(item => item.id === order.id ? response.data.data : item)
+      await loadOrders(activeStatus.value)
     }
   } finally {
     payingOrderId.value = null
@@ -133,21 +124,28 @@ function goToShop() {
   router.push('/shop')
 }
 
-async function loadOrders() {
+async function loadOrders(status = activeStatus.value) {
   if (!user.value) return
 
   loading.value = true
   try {
-    const response = await getShopOrders(user.value.id, 'all')
+    const response = await getShopOrders(user.value.id, status)
     orders.value = response.data.data || []
   } finally {
     loading.value = false
   }
 }
 
-watch(() => route.query.status, status => {
+async function switchStatus(status) {
+  if (!['all', 'pending', 'paid'].includes(status)) return
+
+  activeStatus.value = status
+  await loadOrders(status)
+}
+
+watch(() => route.query.status, async status => {
   if (['all', 'pending', 'paid'].includes(status)) {
-    activeStatus.value = status
+    await switchStatus(status)
   }
 })
 

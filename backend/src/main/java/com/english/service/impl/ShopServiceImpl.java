@@ -95,6 +95,8 @@ public class ShopServiceImpl implements ShopService {
             // 业务过期时间落库，支付时会再次校验，避免只依赖 MQ 消息。
             order.setExpireAt(LocalDateTime.now().plusMinutes(orderTimeoutMinutes));
             ShopOrder saved = orderMapper.save(order);
+            log.info("Shop order created: orderId={}, orderNo={}, productId={}, userId={}, timeoutMinutes={}",
+                    saved.getId(), saved.getOrderNo(), saved.getProductId(), saved.getUserId(), orderTimeoutMinutes);
             trySendOrderTimeoutMessage(saved.getId());
             return saved;
         } catch (RuntimeException error) {
@@ -145,6 +147,7 @@ public class ShopServiceImpl implements ShopService {
 
         order.setStatus(ShopOrder.STATUS_PAID);
         order.setPaidAt(LocalDateTime.now());
+        log.info("Shop order paid: orderId={}, orderNo={}, userId={}", order.getId(), order.getOrderNo(), order.getUserId());
         return orderMapper.save(order);
     }
 
@@ -166,6 +169,8 @@ public class ShopServiceImpl implements ShopService {
         order.setCanceledAt(LocalDateTime.now());
         orderMapper.save(order);
         restoreStock(order.getProductId());
+        log.info("Shop order canceled by timeout: orderId={}, orderNo={}, productId={}",
+                order.getId(), order.getOrderNo(), order.getProductId());
     }
 
     private void reserveStock(ShopProduct product) {
@@ -182,6 +187,8 @@ public class ShopServiceImpl implements ShopService {
          * 如果扣成负数，说明库存已经不够，需要立刻 increment 回补。
          */
         Long stock = redisTemplate.opsForValue().decrement(stockKey);
+        log.info("Redis stock reserved: productId={}, stockKey={}, remainingStock={}",
+                product.getId(), stockKey, stock);
         if (stock == null || stock < 0) {
             redisTemplate.opsForValue().increment(stockKey);
             throw new RuntimeException("商品库存不足");
@@ -252,6 +259,8 @@ public class ShopServiceImpl implements ShopService {
                 orderId,
                 processor
         );
+        log.info("RabbitMQ timeout message produced: orderId={}, exchange={}, routingKey={}, ttlMillis={}",
+                orderId, ShopRabbitConfig.ORDER_EXCHANGE, ShopRabbitConfig.ORDER_DELAY_ROUTING_KEY, ttl);
     }
 
     private void trySendOrderTimeoutMessage(Long orderId) {

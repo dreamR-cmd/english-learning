@@ -6,16 +6,11 @@
       <h1>📄 阅读理解</h1>
 
       <div v-if="loading" class="loading">加载文章...</div>
-      <div v-else-if="readings.length === 0" class="empty-tip">暂无文章</div>
+      <div v-else-if="readingQueue.length === 0" class="empty-tip">暂无阅读题目</div>
       <div v-else>
-        <div class="reading-nav">
-          <span
-            v-for="(r, i) in readings"
-            :key="r.id"
-            class="reading-tab"
-            :class="{ active: currentIndex === i }"
-            @click="currentIndex = i; resetQuiz()"
-          >{{ r.title.substring(0, 12) }}{{ r.title.length > 12 ? '...' : '' }}</span>
+        <div class="reading-progress">
+          <span>随机阅读文章 {{ currentReadingIndex + 1 }} / {{ readingQueue.length }}</span>
+          <span>{{ currentReading.title }}</span>
         </div>
 
         <div class="reading-card">
@@ -23,33 +18,55 @@
           <div class="reading-text">{{ currentReading.content }}</div>
         </div>
 
-        <div v-if="currentReading.questions" class="quiz-section">
+        <div class="quiz-section">
           <h3>📝 阅读理解题</h3>
-          <div v-for="(q, qi) in parsedQuestions" :key="qi" class="question-item">
-            <p class="question-text">{{ qi + 1 }}. {{ q.q }}</p>
+          <div v-for="(question, qi) in currentQuestions" :key="qi" class="question-item">
+            <p class="question-text">{{ qi + 1 }}. {{ question.q }}</p>
             <div class="options">
-              <label v-for="(opt, oi) in q.options" :key="oi" class="option"
+              <label v-for="(opt, oi) in question.options" :key="oi" class="option"
                 :class="{
-                  correct: answered[qi] && oi === q.answer,
-                  wrong: answered[qi] && oi === selectedAnswers[qi] && oi !== q.answer,
+                  correct: completed && oi === question.answer,
+                  wrong: completed && oi === selectedAnswers[qi] && oi !== question.answer,
                   selected: selectedAnswers[qi] === oi
                 }"
               >
                 <input
                   type="radio"
-                  :name="'q' + qi"
+                  :name="'reading-question-' + qi"
                   :value="oi"
                   v-model="selectedAnswers[qi]"
-                  @change="checkAnswer(qi)"
-                  :disabled="answered[qi]"
+                  :disabled="completed"
                 />
                 <span>{{ String.fromCharCode(65 + oi) }}. {{ opt }}</span>
               </label>
             </div>
-            <p v-if="answered[qi]" class="answer-feedback"
-              :class="selectedAnswers[qi] === q.answer ? 'correct-text' : 'wrong-text'">
-              {{ selectedAnswers[qi] === q.answer ? '✓ 回答正确！' : '✗ 回答错误。正确答案是 ' + String.fromCharCode(65 + q.answer) }}
+
+            <p v-if="completed" class="answer-feedback"
+              :class="selectedAnswers[qi] === question.answer ? 'correct-text' : 'wrong-text'">
+              {{ selectedAnswers[qi] === question.answer ? '✓ 回答正确！' : '✗ 回答错误。正确答案是 ' + optionLetter(question.answer) }}
             </p>
+          </div>
+
+          <p v-if="!completed && !allAnswered" class="completion-hint">请完成本文全部题目后再提交。</p>
+
+          <div class="quiz-actions">
+            <button
+              v-if="!completed"
+              class="quiz-btn primary"
+              type="button"
+              :disabled="!allAnswered"
+              @click="completeReading"
+            >
+              完成
+            </button>
+            <button
+              v-else
+              class="quiz-btn primary"
+              type="button"
+              @click="nextReading"
+            >
+              {{ hasNextReading ? '下一篇文章' : '重新随机练习' }}
+            </button>
           </div>
         </div>
       </div>
@@ -69,23 +86,25 @@ const props = defineProps({ moduleCode: String })
 const moduleCode = computed(() => props.moduleCode || route.params.moduleCode)
 
 const readings = ref([])
+const readingQueue = ref([])
 const loading = ref(true)
-const currentIndex = ref(0)
+const currentReadingIndex = ref(0)
 const selectedAnswers = ref([])
-const answered = ref([])
+const completed = ref(false)
 
-const currentReading = computed(() => readings.value[currentIndex.value] || {})
-const parsedQuestions = computed(() => {
-  try {
-    return JSON.parse(currentReading.value.questions || '[]')
-  } catch { return [] }
-})
+const currentReading = computed(() => readingQueue.value[currentReadingIndex.value] || {})
+const currentQuestions = computed(() => parseQuestions(currentReading.value.questions))
+const hasNextReading = computed(() => currentReadingIndex.value < readingQueue.value.length - 1)
+const allAnswered = computed(() => (
+  currentQuestions.value.length > 0
+  && currentQuestions.value.every((_, index) => selectedAnswers.value[index] !== null && selectedAnswers.value[index] !== undefined)
+))
 
 onMounted(async () => {
   try {
     const res = await getReadingsByModule(moduleCode.value)
     readings.value = res.data.data || []
-    resetQuiz()
+    buildReadingQueue()
   } catch (e) {
     console.error('Failed to load readings', e)
   } finally {
@@ -93,17 +112,48 @@ onMounted(async () => {
   }
 })
 
-function resetQuiz() {
-  selectedAnswers.value = new Array(parsedQuestions.value.length).fill(null)
-  answered.value = new Array(parsedQuestions.value.length).fill(false)
-}
 function back() { router.push(`/module/${moduleCode.value}`) }
-function checkAnswer(qi) {
-  answered.value[qi] = true
-  const q = parsedQuestions.value[qi]
-  if (!q) return
-  const selected = selectedAnswers.value[qi]
-  if (selected !== q.answer) {
+
+function buildReadingQueue() {
+  readingQueue.value = shuffle(readings.value.filter(reading => parseQuestions(reading.questions).length > 0))
+  currentReadingIndex.value = 0
+  resetCurrentReading()
+}
+
+function parseQuestions(questions) {
+  try {
+    return JSON.parse(questions || '[]')
+  } catch {
+    return []
+  }
+}
+
+function shuffle(items) {
+  const nextItems = [...items]
+  for (let i = nextItems.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[nextItems[i], nextItems[j]] = [nextItems[j], nextItems[i]]
+  }
+  return nextItems
+}
+
+function resetCurrentReading() {
+  selectedAnswers.value = new Array(currentQuestions.value.length).fill(null)
+  completed.value = false
+}
+
+function optionLetter(index) {
+  return String.fromCharCode(65 + index)
+}
+
+function completeReading() {
+  if (!allAnswered.value || completed.value) return
+
+  completed.value = true
+  currentQuestions.value.forEach((q, index) => {
+    const selected = selectedAnswers.value[index]
+    if (selected === q.answer) return
+
     try {
       const user = JSON.parse(sessionStorage.getItem('currentUser'))
       if (user) {
@@ -113,13 +163,25 @@ function checkAnswer(qi) {
           contentId: currentReading.value.id,
           contentTitle: currentReading.value.title,
           questionText: q.q,
-          userAnswer: String.fromCharCode(65 + (selected ?? -1)),
-          correctAnswer: String.fromCharCode(65 + q.answer),
+          userAnswer: optionLetter(selected),
+          correctAnswer: optionLetter(q.answer),
           moduleCode: moduleCode.value
         })
       }
     } catch {}
+  })
+}
+
+function nextReading() {
+  if (!completed.value) return
+
+  if (hasNextReading.value) {
+    currentReadingIndex.value += 1
+    resetCurrentReading()
+    return
   }
+
+  buildReadingQueue()
 }
 </script>
 
@@ -130,26 +192,22 @@ function checkAnswer(qi) {
 .breadcrumb:hover { text-decoration: underline; }
 .practice-content h1 { font-size: 26px; color: #1a1a1a; margin-bottom: 24px; }
 .loading, .empty-tip { text-align: center; color: #999; padding: 60px; font-size: 16px; }
-.reading-nav {
+.reading-progress {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 20px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-}
-.reading-tab {
-  padding: 8px 16px;
   background: #fff;
-  border-radius: 20px;
+  border-radius: 12px;
+  padding: 12px 16px;
   font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  transition: all 0.2s;
+  color: #64748b;
+  flex-wrap: wrap;
 }
-.reading-tab.active {
-  background: #1a73e8;
-  color: #fff;
+.reading-progress span:first-child {
+  color: #1a73e8;
+  font-weight: 700;
 }
 .reading-card {
   background: #fff;
@@ -193,4 +251,34 @@ function checkAnswer(qi) {
 }
 .correct-text { color: #16a34a; }
 .wrong-text { color: #dc2626; }
+.completion-hint {
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: right;
+}
+.quiz-actions { margin-top: 18px; display: flex; justify-content: flex-end; }
+.quiz-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.quiz-btn.primary {
+  background: #1a73e8;
+  color: #fff;
+}
+.quiz-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+@media (max-width: 768px) {
+  .reading-progress {
+    flex-direction: column;
+  }
+  .quiz-btn {
+    width: 100%;
+  }
+}
 </style>

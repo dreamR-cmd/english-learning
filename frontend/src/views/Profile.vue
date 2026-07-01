@@ -766,24 +766,30 @@ onMounted(async () => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background: #f0f2f5;
+  background:
+    radial-gradient(circle at 10% 8%, rgba(34, 197, 94, 0.16), transparent 28%),
+    radial-gradient(circle at 88% 10%, rgba(245, 158, 11, 0.16), transparent 26%),
+    linear-gradient(180deg, #f7faf5 0%, #f5f7fb 100%);
 }
 
 .profile-content {
-  max-width: 800px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 36px 24px 56px;
 }
 
 .user-card {
-  background: linear-gradient(135deg, #1a73e8 0%, #4a90d9 50%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 32px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(240, 253, 244, 0.88)),
+    #fff;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 28px;
+  padding: 38px;
   display: flex;
   align-items: center;
   gap: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 16px rgba(26, 115, 232, 0.25);
+  margin-bottom: 28px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 }
 
 .avatar-section {
@@ -791,19 +797,20 @@ onMounted(async () => {
 }
 
 .avatar-display {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  width: 88px;
+  height: 88px;
+  border-radius: 28px;
+  background: #ecfdf5;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 44px;
-  border: 3px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid #bbf7d0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
 .user-details {
-  color: #fff;
+  color: #102018;
   flex: 1;
   min-width: 0;
 }
@@ -811,8 +818,9 @@ onMounted(async () => {
 .nickname-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
 }
 
@@ -820,78 +828,88 @@ onMounted(async () => {
   display: inline-block;
   margin-top: 8px;
   font-size: 13px;
-  opacity: 0.9;
+  color: #15803d;
+  font-weight: 800;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  padding: 6px 12px;
 }
 
 .profile-summary {
-  margin-top: 10px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.82);
+  max-width: 680px;
+  margin-top: 14px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #526057;
 }
 
 .nickname-text {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: clamp(30px, 5vw, 54px);
+  line-height: 1;
+  font-weight: 900;
 }
 
 .btn-settings {
-  background: rgba(255, 255, 255, 0.2);
+  background: #102018;
   border: none;
   color: #fff;
   border-radius: 999px;
-  padding: 6px 12px;
+  padding: 11px 18px;
   cursor: pointer;
-  font-size: 13px;
-  transition: background 0.2s, transform 0.2s;
+  font-size: 14px;
+  font-weight: 800;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .btn-settings:hover {
-  background: rgba(255, 255, 255, 0.35);
   transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(23, 32, 51, 0.2);
 }
 
 .username-tag {
   font-size: 14px;
-  opacity: 0.75;
+  color: #64748b;
+  font-weight: 700;
 }
 
 .feature-summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
   margin-bottom: 22px;
 }
 
 .feature-card {
-  border: 1px solid #e5edf8;
-  border-radius: 16px;
-  background: #fff;
-  padding: 16px;
+  min-height: 150px;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 24px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
 .feature-card:hover {
-  transform: translateY(-2px);
-  border-color: #1a73e8;
-  box-shadow: 0 10px 24px rgba(26, 115, 232, 0.12);
+  transform: translateY(-5px);
+  border-color: #86efac;
+  box-shadow: 0 18px 40px rgba(22, 101, 52, 0.12);
 }
 
 .feature-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: #f0f7ff;
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  background: #f0fdf4;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 30px;
   flex-shrink: 0;
 }
 
@@ -904,21 +922,21 @@ onMounted(async () => {
 }
 
 .feature-main strong {
-  color: #1f2937;
-  font-size: 15px;
+  color: #102018;
+  font-size: 20px;
 }
 
 .feature-main small {
-  color: #7b8794;
-  line-height: 1.5;
+  color: #526057;
+  line-height: 1.7;
 }
 
 .feature-count {
   min-width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: #edf4ff;
-  color: #1a73e8;
+  background: #ecfdf5;
+  color: #15803d;
   font-size: 13px;
   font-weight: 800;
   display: inline-flex;
@@ -1725,13 +1743,22 @@ onMounted(async () => {
 
 @media (max-width: 768px) {
   .profile-content {
-    padding: 16px;
+    padding: 24px 16px 40px;
   }
 
   .user-card {
-    padding: 24px 18px;
+    padding: 26px;
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .nickname-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .btn-settings {
+    width: 100%;
   }
 
   .tabs {

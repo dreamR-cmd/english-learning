@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
+
+
 @Component
 public class ShopDataInitializer implements CommandLineRunner {
     private final ShopProductMapper productMapper;

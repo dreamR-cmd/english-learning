@@ -130,9 +130,9 @@ onMounted(async () => {
 .shop-page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 8% 10%, rgba(245, 158, 11, 0.18), transparent 28%),
-    radial-gradient(circle at 90% 8%, rgba(26, 115, 232, 0.14), transparent 24%),
-    linear-gradient(180deg, #fffaf1 0%, #f5f7fb 100%);
+    radial-gradient(circle at 10% 8%, rgba(34, 197, 94, 0.16), transparent 28%),
+    radial-gradient(circle at 88% 10%, rgba(245, 158, 11, 0.16), transparent 26%),
+    linear-gradient(180deg, #f7faf5 0%, #f5f7fb 100%);
 }
 
 .shop-content {
@@ -147,27 +147,36 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 22px;
+  border-radius: 28px;
+  padding: 38px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(255, 251, 235, 0.88)),
+    #fff;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 }
 
 .shop-kicker {
-  color: #b45309;
+  color: #15803d;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   margin-bottom: 10px;
 }
 
 .shop-hero h1 {
-  color: #172033;
-  font-size: 38px;
-  margin-bottom: 10px;
+  color: #102018;
+  font-size: clamp(34px, 7vw, 72px);
+  line-height: 0.95;
+  margin-bottom: 18px;
 }
 
 .shop-subtitle {
   max-width: 660px;
-  color: #667085;
-  line-height: 1.7;
+  color: #526057;
+  font-size: 16px;
+  line-height: 1.9;
 }
 
 .back-btn,
@@ -180,9 +189,8 @@ onMounted(async () => {
 }
 
 .back-btn {
-  background: #fff;
-  color: #1a73e8;
-  border: 1px solid #d9e6fb;
+  background: #102018;
+  color: #fff;
   padding: 11px 18px;
 }
 
@@ -203,7 +211,7 @@ onMounted(async () => {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(226, 232, 240, 0.9);
-  color: #475569;
+  color: #526057;
   font-size: 13px;
   font-weight: 700;
 }
@@ -219,7 +227,7 @@ onMounted(async () => {
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(226, 232, 240, 0.96);
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
 }
@@ -256,20 +264,20 @@ onMounted(async () => {
 }
 
 .product-category {
-  color: #1a73e8;
+  color: #15803d;
   font-size: 12px;
   font-weight: 800;
   margin-bottom: 8px;
 }
 
 .product-body h2 {
-  color: #172033;
+  color: #102018;
   font-size: 21px;
   margin-bottom: 10px;
 }
 
 .product-desc {
-  color: #64748b;
+  color: #526057;
   font-size: 14px;
   line-height: 1.65;
 }
@@ -313,7 +321,7 @@ onMounted(async () => {
 }
 
 .buy-btn {
-  background: #172033;
+  background: #102018;
   color: #fff;
   padding: 10px 16px;
 }
@@ -353,6 +361,7 @@ onMounted(async () => {
   .shop-hero {
     flex-direction: column;
     align-items: flex-start;
+    padding: 26px;
   }
 
   .shop-hero h1 {

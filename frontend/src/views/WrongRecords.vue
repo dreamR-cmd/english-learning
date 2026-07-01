@@ -6,7 +6,7 @@
         <div>
           <p class="sub-kicker">Wrong Book</p>
           <h1>错题本</h1>
-          <p>归纳阅读、听力和单词练习中的错题记录。</p>
+          <p>单词错题和题目错题分开管理，复习路径更清晰。</p>
         </div>
         <button class="back-btn" type="button" @click="back">返回个人中心</button>
       </section>
@@ -18,28 +18,91 @@
         <small>练习中答错的题目会自动收录到这里。</small>
       </div>
 
-      <section v-else class="record-list">
-        <article
-          v-for="record in wrongRecords"
-          :key="record.id"
-          class="record-card"
-          :class="{ clickable: canOpenDetail(record) }"
-          @click="openDetail(record)"
-        >
-          <div class="record-header">
-            <span class="type-badge">{{ typeLabel(record.questionType) }}</span>
-            <span class="record-title">{{ record.contentTitle || '练习题目' }}</span>
-            <span class="record-time">{{ formatTime(record.createdAt) }}</span>
+      <section v-else class="wrong-sections">
+        <section class="wrong-section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Words</p>
+              <h2>单词错题</h2>
+            </div>
+            <div class="section-actions">
+              <span class="count-pill">{{ wordRecords.length }} 条</span>
+              <button class="collapse-btn" type="button" @click="wordCollapsed = !wordCollapsed">
+                {{ wordCollapsed ? '展开' : '折叠' }}
+              </button>
+            </div>
           </div>
-          <p class="record-question">{{ record.questionText }}</p>
-          <div class="answer-row">
-            <span class="wrong-answer">我的答案：{{ record.userAnswer || '-' }}</span>
-            <span class="correct-answer">正确答案：{{ record.correctAnswer || '-' }}</span>
-            <button v-if="canOpenDetail(record)" class="view-btn" type="button" @click.stop="openDetail(record)">
-              {{ detailActionLabel(record) }}
-            </button>
+
+          <Transition name="section-fold" mode="out-in">
+            <div v-if="wordCollapsed" key="word-collapsed" class="mini-empty collapsed">单词错题已折叠</div>
+            <div v-else-if="wordRecords.length === 0" key="word-empty" class="mini-empty">暂无单词错题</div>
+            <div v-else key="word-list" class="record-list fold-content">
+              <article
+                v-for="record in wordRecords"
+                :key="record.id"
+                class="record-card word-record"
+                :class="{ clickable: canOpenDetail(record) }"
+                @click="openDetail(record)"
+              >
+                <div class="record-header">
+                  <span class="type-badge word">单词</span>
+                  <span class="record-title">{{ record.contentTitle || record.questionText || '单词卡片' }}</span>
+                  <span class="record-time">{{ formatTime(record.createdAt) }}</span>
+                </div>
+                <p class="record-question">{{ record.questionText }}</p>
+                <div class="answer-row">
+                  <span class="correct-answer">释义：{{ record.correctAnswer || '-' }}</span>
+                  <button v-if="canOpenDetail(record)" class="view-btn" type="button" @click.stop="openDetail(record)">
+                    查看单词
+                  </button>
+                </div>
+              </article>
+            </div>
+          </Transition>
+        </section>
+
+        <section class="wrong-section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Questions</p>
+              <h2>题目错题</h2>
+            </div>
+            <div class="section-actions">
+              <span class="count-pill">{{ questionRecords.length }} 条</span>
+              <button class="collapse-btn" type="button" @click="questionCollapsed = !questionCollapsed">
+                {{ questionCollapsed ? '展开' : '折叠' }}
+              </button>
+            </div>
           </div>
-        </article>
+
+          <Transition name="section-fold" mode="out-in">
+            <div v-if="questionCollapsed" key="question-collapsed" class="mini-empty collapsed">题目错题已折叠</div>
+            <div v-else-if="questionRecords.length === 0" key="question-empty" class="mini-empty">暂无阅读或听力错题</div>
+            <div v-else key="question-list" class="record-list fold-content">
+              <article
+                v-for="record in questionRecords"
+                :key="record.id"
+                class="record-card"
+                :class="{ clickable: canOpenDetail(record) }"
+                @click="openDetail(record)"
+              >
+                <div class="record-header">
+                  <span class="type-badge">{{ typeLabel(record.questionType) }}</span>
+                  <span class="record-title">{{ record.contentTitle || '练习题目' }}</span>
+                  <span class="record-time">{{ formatTime(record.createdAt) }}</span>
+                </div>
+                <p class="record-question">{{ record.questionText }}</p>
+                <div class="answer-row">
+                  <span class="wrong-answer">我的答案：{{ record.userAnswer || '-' }}</span>
+                  <span class="correct-answer">正确答案：{{ record.correctAnswer || '-' }}</span>
+                  <button v-if="canOpenDetail(record)" class="view-btn" type="button" @click.stop="openDetail(record)">
+                    {{ detailActionLabel(record) }}
+                  </button>
+                </div>
+              </article>
+            </div>
+          </Transition>
+        </section>
       </section>
     </main>
 
@@ -137,6 +200,8 @@ const detailWord = ref(null)
 const detailQuestion = ref(null)
 const wordActionLoading = ref('')
 const wordActionMessage = ref('')
+const wordCollapsed = ref(true)
+const questionCollapsed = ref(true)
 
 const readingCache = new Map()
 const listeningCache = new Map()
@@ -174,6 +239,8 @@ const detailOptions = computed(() => (
 ))
 const userAnswerIndex = computed(() => answerToIndex(detailRecord.value?.userAnswer))
 const correctAnswerIndex = computed(() => answerToIndex(detailRecord.value?.correctAnswer))
+const wordRecords = computed(() => wrongRecords.value.filter(record => record.questionType === 'WORD'))
+const questionRecords = computed(() => wrongRecords.value.filter(record => record.questionType !== 'WORD'))
 
 function formatTime(dateStr) {
   if (!dateStr) return ''
@@ -383,12 +450,44 @@ onMounted(async () => {
 .state-card { background: #fff; border-radius: 18px; padding: 46px 20px; text-align: center; color: #64748b; border: 1px solid #e2e8f0; }
 .empty-icon { font-size: 48px; margin-bottom: 10px; }
 .empty small { color: #94a3b8; }
+.wrong-sections { display: flex; flex-direction: column; gap: 24px; }
+.wrong-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 22px; padding: 20px; box-shadow: 0 12px 26px rgba(15, 23, 42, 0.05); }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.section-kicker { margin: 0 0 4px; color: #1a73e8; font-size: 12px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; }
+.section-heading h2 { margin: 0; color: #172033; font-size: 22px; }
+.section-actions { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.count-pill { border-radius: 999px; background: #f1f5f9; color: #475569; padding: 6px 12px; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.collapse-btn { border: 1px solid #dbeafe; border-radius: 999px; background: #fff; color: #1a73e8; padding: 6px 12px; font-size: 13px; font-weight: 800; cursor: pointer; }
+.collapse-btn:hover { background: #edf4ff; }
+.mini-empty { border: 1px dashed #cbd5e1; border-radius: 16px; padding: 24px; color: #94a3b8; text-align: center; background: #f8fafc; }
+.mini-empty.collapsed { color: #64748b; background: #f1f5f9; }
+.fold-content { overflow: hidden; }
+.section-fold-enter-active,
+.section-fold-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease, max-height 0.28s ease;
+  overflow: hidden;
+}
+.section-fold-enter-from,
+.section-fold-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+  max-height: 0;
+}
+.section-fold-enter-to,
+.section-fold-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 1200px;
+}
 .record-list { display: flex; flex-direction: column; gap: 14px; }
 .record-card { background: #fff; border-radius: 18px; padding: 18px 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05); }
+.wrong-section .record-card { box-shadow: none; }
+.word-record { background: linear-gradient(160deg, #ffffff 0%, #f8fbff 100%); border-color: #dbeafe; }
 .record-card.clickable { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
 .record-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08); }
 .record-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .type-badge { background: #edf4ff; color: #1a73e8; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; }
+.type-badge.word { background: #ecfdf5; color: #15803d; }
 .record-title { color: #334155; font-weight: 700; }
 .record-time { margin-left: auto; color: #94a3b8; font-size: 12px; }
 .record-question { color: #334155; line-height: 1.7; margin-bottom: 12px; }
@@ -433,6 +532,8 @@ onMounted(async () => {
   .sub-content { padding: 24px 16px 36px; }
   .sub-hero { flex-direction: column; align-items: flex-start; }
   .back-btn { width: 100%; }
+  .section-heading { align-items: flex-start; }
+  .section-actions { flex-direction: column; align-items: flex-end; }
   .record-time { margin-left: 0; width: 100%; }
   .detail-overlay { padding: 12px; }
   .detail-header, .detail-body { padding-left: 18px; padding-right: 18px; }

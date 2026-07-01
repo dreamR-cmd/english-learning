@@ -101,4 +101,16 @@ export function payShopOrder(userId, orderId) {
   return api.post(`/shop/orders/${orderId}/pay`, { userId })
 }
 
+export function getSelectedReadings(userId) {
+  return api.get('/selected-readings', { params: userId ? { userId } : {} })
+}
+
+export function addSelectedReadingFavorite(userId, selectedReadingId) {
+  return api.post('/selected-readings/favorites', { userId, selectedReadingId })
+}
+
+export function removeSelectedReadingFavorite(userId, selectedReadingId) {
+  return api.delete(`/selected-readings/favorites/${selectedReadingId}`, { params: { userId } })
+}
+
 export default api
