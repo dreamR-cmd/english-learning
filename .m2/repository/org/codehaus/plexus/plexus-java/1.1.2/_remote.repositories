@@ -1,4 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Jul 03 08:47:11 CST 2026
+#Tue Jul 07 17:13:16 CST 2026
+plexus-java-1.1.2.jar>aliyunmaven=
 plexus-java-1.1.2.jar>central=
+plexus-java-1.1.2.pom>aliyunmaven=
 plexus-java-1.1.2.pom>central=

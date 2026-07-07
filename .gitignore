@@ -1,4 +1,16 @@
+.m2/
 backend/.idea/
+backend/.m2/
+backend/*.log
+.run/
+logs/
 backend/target/
+backend-services/backend/.idea/
+backend-services/backend/target/
+backend-services/gateway/target/
+backend-services/auth-service/target/
+backend-services/user-service/target/
+backend-services/learning-service/target/
+backend-services/shop-service/target/
 frontend/node_modules/
 frontend/dist/

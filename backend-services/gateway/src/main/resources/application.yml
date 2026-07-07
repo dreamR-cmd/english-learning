@@ -1,0 +1,47 @@
+server:
+  port: ${GATEWAY_PORT:8080}
+
+spring:
+  application:
+    name: english-learning-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: "*"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowed-headers: "*"
+            allow-credentials: true
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/auth/**,/api/admin/**
+        - id: user-service
+          uri: ${USER_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/user/**
+        - id: learning-service
+          uri: ${LEARNING_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/modules/**,/api/practice/**,/api/selected-readings/**
+        - id: shop-service
+          uri: ${SHOP_SERVICE_URI:http://localhost:8085}
+          predicates:
+            - Path=/api/shop/**
+        - id: english-learning-swagger
+          uri: ${LEARNING_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/swagger-ui/**,/swagger-ui.html,/v3/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
