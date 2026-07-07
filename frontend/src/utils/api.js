@@ -1,9 +1,40 @@
 import axios from 'axios'
+import { clearCurrentUser, isCurrentUserExpired, readStoredCurrentUser } from './currentUser'
 
 const api = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' }
 })
+
+api.interceptors.request.use(config => {
+  if (isCurrentUserExpired()) {
+    clearCurrentUser()
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
+    return config
+  }
+
+  const user = readStoredCurrentUser()
+  if (user?.token) {
+    config.headers.Authorization = `Bearer ${user.token}`
+  }
+  return config
+})
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    const status = error.response?.status
+    if ((status === 401 || status === 403) && error.config?.url?.startsWith('/admin')) {
+      clearCurrentUser()
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
 
 export function login(username, password) {
   return api.post('/auth/login', { username, password })
@@ -111,6 +142,70 @@ export function addSelectedReadingFavorite(userId, selectedReadingId) {
 
 export function removeSelectedReadingFavorite(userId, selectedReadingId) {
   return api.delete(`/selected-readings/favorites/${selectedReadingId}`, { params: { userId } })
+}
+
+export function getAdminOrders() {
+  return api.get('/admin/orders')
+}
+
+export function updateAdminOrderStatus(orderId, status) {
+  return api.put(`/admin/orders/${orderId}/status`, { status })
+}
+
+export function getAdminModules() {
+  return api.get('/admin/modules')
+}
+
+export function createAdminModule(data) {
+  return api.post('/admin/modules', data)
+}
+
+export function updateAdminModule(moduleId, data) {
+  return api.put(`/admin/modules/${moduleId}`, data)
+}
+
+export function deleteAdminModule(moduleId) {
+  return api.delete(`/admin/modules/${moduleId}`)
+}
+
+export function getAdminUsers() {
+  return api.get('/admin/users')
+}
+
+export function updateAdminUserRole(userId, roleId) {
+  return api.put(`/admin/users/${userId}/role`, { roleId })
+}
+
+export function deleteAdminUser(userId) {
+  return api.delete(`/admin/users/${userId}`)
+}
+
+export function getAdminRoles() {
+  return api.get('/admin/roles')
+}
+
+export function createAdminRole(data) {
+  return api.post('/admin/roles', data)
+}
+
+export function updateAdminRole(roleId, data) {
+  return api.put(`/admin/roles/${roleId}`, data)
+}
+
+export function deleteAdminRole(roleId) {
+  return api.delete(`/admin/roles/${roleId}`)
+}
+
+export function getAdminPermissions() {
+  return api.get('/admin/permissions')
+}
+
+export function getAdminRolePermissions(roleId) {
+  return api.get(`/admin/roles/${roleId}/permissions`)
+}
+
+export function assignAdminRolePermissions(roleId, permissionIds) {
+  return api.put(`/admin/roles/${roleId}/permissions`, { permissionIds })
 }
 
 export default api

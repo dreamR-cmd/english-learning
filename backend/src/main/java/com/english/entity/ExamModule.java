@@ -15,6 +15,7 @@
      private String code;
      private String description;
      private String icon;
+     private String routePath;
      private Integer sortOrder;
 
      @Transient
@@ -32,6 +33,8 @@
      public void setDescription(String description) { this.description = description; }
      public String getIcon() { return icon; }
      public void setIcon(String icon) { this.icon = icon; }
+     public String getRoutePath() { return routePath; }
+     public void setRoutePath(String routePath) { this.routePath = routePath; }
      public Integer getSortOrder() { return sortOrder; }
      public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
      public ExamCountdown getExamCountdown() { return examCountdown; }

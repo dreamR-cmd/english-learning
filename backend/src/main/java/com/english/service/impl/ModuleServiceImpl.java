@@ -14,10 +14,10 @@
          this.moduleMapper = moduleMapper;
      }
  
-     @Override
-     public List<ExamModule> getAllModules() {
-         return moduleMapper.findAll();
-     }
+    @Override
+    public List<ExamModule> getAllModules() {
+        return moduleMapper.findAllByOrderBySortOrderAscIdAsc();
+    }
  
      @Override
      public ExamModule getModuleByCode(String code) {

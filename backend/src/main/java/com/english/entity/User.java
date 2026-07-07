@@ -17,6 +17,8 @@
      private String nickname;
      @Column(name = "daily_word_target")
      private Integer dailyWordTarget;
+     @Column(name = "role_id")
+     private Long roleId;
  
      public User() {}
      public User(String username, String password, String nickname) {
@@ -38,4 +40,6 @@
          return dailyWordTarget == null ? DEFAULT_DAILY_WORD_TARGET : dailyWordTarget;
      }
      public void setDailyWordTarget(Integer dailyWordTarget) { this.dailyWordTarget = dailyWordTarget; }
+     public Long getRoleId() { return roleId; }
+     public void setRoleId(Long roleId) { this.roleId = roleId; }
  }

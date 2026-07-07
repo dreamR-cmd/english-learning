@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Test",
+            "request": "launch",
+            "mainClass": "com.english.Test",
+            "projectName": "english-learning"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-EnglishLearningApplication<english-learning>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.english.EnglishLearningApplication",
+            "projectName": "english-learning",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

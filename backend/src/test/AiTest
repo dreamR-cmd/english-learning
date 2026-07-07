@@ -1,0 +1,9 @@
+
+@SpringbootTest
+public class AiTest {
+    @Test
+    public void test1(){
+        String apiKey = System.getenv("ai_api_key");
+    }
+
+}

@@ -1,0 +1,12 @@
+Exception in thread "AMQP Connection 127.0.0.1:5672" java.lang.NoClassDefFoundError: com/rabbitmq/client/impl/SocketFrameHandler$1
+	at com.rabbitmq.client.impl.SocketFrameHandler.close(SocketFrameHandler.java:225)
+	at com.rabbitmq.client.impl.AMQConnection.doFinalShutdown(AMQConnection.java:808)
+	at com.rabbitmq.client.impl.AMQConnection$MainLoop.run(AMQConnection.java:700)
+	at java.base/java.lang.Thread.run(Thread.java:842)
+Caused by: java.lang.ClassNotFoundException: com.rabbitmq.client.impl.SocketFrameHandler$1
+	at java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:592)
+	at org.springframework.boot.loader.net.protocol.jar.JarUrlClassLoader.loadClass(JarUrlClassLoader.java:104)
+	at org.springframework.boot.loader.launch.LaunchedClassLoader.loadClass(LaunchedClassLoader.java:91)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	... 4 more
