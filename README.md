@@ -192,9 +192,71 @@ ADMIN_TOKEN_SECRET
 CREATE DATABASE english_learning DEFAULT CHARACTER SET utf8mb4;
 ```
 
-### 2. 启动后端服务
+### 2. 一键启动/关闭全部服务（Windows PowerShell）
 
-分别启动网关和各微服务。
+项目根目录提供了服务管理脚本：
+
+```text
+services.ps1
+```
+
+进入项目根目录：
+
+```powershell
+cd F:\idea_project\english_learning\english-learning
+```
+
+启动全部微服务和前端：
+
+```powershell
+.\services.ps1 start
+```
+
+关闭全部服务：
+
+```powershell
+.\services.ps1 stop
+```
+
+重启全部服务：
+
+```powershell
+.\services.ps1 restart
+```
+
+查看运行状态：
+
+```powershell
+.\services.ps1 status
+```
+
+如果 PowerShell 提示禁止运行脚本，可以临时使用：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\services.ps1 start
+```
+
+脚本会为每个服务打开独立 PowerShell 窗口，并在根目录生成临时 PID 文件：
+
+```text
+.service-pids.json
+```
+
+默认会启动：
+
+```text
+auth-service
+user-service
+learning-service
+shop-service
+admin-service
+gateway
+frontend
+```
+
+### 3. 手动启动后端服务
+
+也可以分别启动网关和各微服务。
 
 ```bash
 cd backend-services/auth-service
@@ -232,7 +294,7 @@ mvn spring-boot:run
 http://localhost:8081
 ```
 
-### 3. 启动前端
+### 4. 手动启动前端
 
 ```bash
 cd frontend

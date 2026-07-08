@@ -1,0 +1,9 @@
+﻿{
+    "admin-service":  38840,
+    "auth-service":  34572,
+    "frontend":  24812,
+    "gateway":  63504,
+    "learning-service":  71096,
+    "shop-service":  65636,
+    "user-service":  67492
+}
