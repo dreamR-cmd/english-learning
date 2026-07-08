@@ -10,7 +10,5 @@ public interface ShopService {
     ShopOrder createOrder(Long userId, Long productId);
     List<ShopOrder> getOrders(Long userId, String status);
     ShopOrder payOrder(Long userId, Long orderId);
-    List<ShopOrder> getAdminOrders();
-    ShopOrder updateAdminOrderStatus(Long orderId, String status);
     void cancelExpiredOrder(Long orderId);
 }

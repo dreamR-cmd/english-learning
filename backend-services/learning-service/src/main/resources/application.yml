@@ -1,5 +1,5 @@
 server:
-  port: ${LEARNING_SERVICE_PORT:8084}
+  port: ${LEARNING_SERVICE_PORT:8089}
 spring:
   application:
     name: learning-service
@@ -20,3 +20,18 @@ spring:
 admin:
   token:
     secret: ${ADMIN_TOKEN_SECRET:english-learning-admin-secret}
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: 认证服务
+        url: /v3/api-docs/auth
+      - name: 后台管理服务
+        url: /v3/api-docs/admin
+      - name: 用户服务
+        url: /v3/api-docs/user
+      - name: 学习服务
+        url: /v3/api-docs/learning
+      - name: 商城服务
+        url: /v3/api-docs/shop
+    urls-primary-name: 学习服务

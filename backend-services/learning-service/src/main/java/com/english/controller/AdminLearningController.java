@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @Tag(name = "后台学习管理接口", description = "后台模块管理接口")
-@RestController
 @RequestMapping("/api/admin/learning")
 public class AdminLearningController {
     private final ModuleService moduleService;

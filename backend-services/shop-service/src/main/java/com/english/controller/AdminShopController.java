@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 
 @Tag(name = "后台商城管理接口", description = "后台订单管理接口")
-@RestController
 @RequestMapping("/api/admin/shop")
 public class AdminShopController {
     private final ShopService shopService;

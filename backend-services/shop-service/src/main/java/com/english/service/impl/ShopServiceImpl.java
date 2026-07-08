@@ -152,26 +152,6 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
-    public List<ShopOrder> getAdminOrders() {
-        return orderMapper.findAllByOrderByCreatedAtDesc();
-    }
-
-    @Override
-    @Transactional
-    public ShopOrder updateAdminOrderStatus(Long orderId, String status) {
-        ShopOrder order = orderMapper.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("订单不存在"));
-        order.setStatus(status);
-        if (ShopOrder.STATUS_PAID.equals(status) && order.getPaidAt() == null) {
-            order.setPaidAt(LocalDateTime.now());
-        }
-        if (ShopOrder.STATUS_CANCELED.equals(status) && order.getCanceledAt() == null) {
-            order.setCanceledAt(LocalDateTime.now());
-        }
-        return orderMapper.save(order);
-    }
-
-    @Override
     @Transactional
     public void cancelExpiredOrder(Long orderId) {
         /*

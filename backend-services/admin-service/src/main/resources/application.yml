@@ -1,0 +1,22 @@
+server:
+  port: ${ADMIN_SERVICE_PORT:8091}
+spring:
+  application:
+    name: admin-service
+  datasource:
+    url: ${ADMIN_DB_URL:${DB_URL:jdbc:mysql://localhost:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true}}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${ADMIN_DB_USERNAME:${DB_USERNAME:root}}
+    password: ${ADMIN_DB_PASSWORD:${DB_PASSWORD:123456}}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.MySQLDialect
+  sql:
+    init:
+      mode: never
+
+admin:
+  token:
+    secret: ${ADMIN_TOKEN_SECRET:english-learning-admin-secret}

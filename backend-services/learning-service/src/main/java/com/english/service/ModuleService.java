@@ -6,6 +6,4 @@
  public interface ModuleService {
      List<ExamModule> getAllModules();
      ExamModule getModuleByCode(String code);
-     ExamModule saveModule(ExamModule module);
-     void deleteModule(Long moduleId);
  }

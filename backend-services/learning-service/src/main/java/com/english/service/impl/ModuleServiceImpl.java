@@ -25,25 +25,4 @@
          if (module == null) throw new RuntimeException("模块不存在: " + code);
          return module;
      }
-
-    @Override
-    public ExamModule saveModule(ExamModule module) {
-        if (module.getId() != null) {
-            ExamModule existing = moduleMapper.findById(module.getId())
-                    .orElseThrow(() -> new RuntimeException("模块不存在"));
-            existing.setName(module.getName());
-            existing.setCode(module.getCode());
-            existing.setDescription(module.getDescription());
-            existing.setIcon(module.getIcon());
-            existing.setRoutePath(module.getRoutePath());
-            existing.setSortOrder(module.getSortOrder());
-            return moduleMapper.save(existing);
-        }
-        return moduleMapper.save(module);
-    }
-
-    @Override
-    public void deleteModule(Long moduleId) {
-        moduleMapper.deleteById(moduleId);
-    }
  }

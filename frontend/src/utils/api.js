@@ -145,27 +145,27 @@ export function removeSelectedReadingFavorite(userId, selectedReadingId) {
 }
 
 export function getAdminOrders() {
-  return api.get('/admin/shop/orders')
+  return api.get('/admin/orders')
 }
 
 export function updateAdminOrderStatus(orderId, status) {
-  return api.put(`/admin/shop/orders/${orderId}/status`, { status })
+  return api.put(`/admin/orders/${orderId}/status`, { status })
 }
 
 export function getAdminModules() {
-  return api.get('/admin/learning/modules')
+  return api.get('/admin/modules')
 }
 
 export function createAdminModule(data) {
-  return api.post('/admin/learning/modules', data)
+  return api.post('/admin/modules', data)
 }
 
 export function updateAdminModule(moduleId, data) {
-  return api.put(`/admin/learning/modules/${moduleId}`, data)
+  return api.put(`/admin/modules/${moduleId}`, data)
 }
 
 export function deleteAdminModule(moduleId) {
-  return api.delete(`/admin/learning/modules/${moduleId}`)
+  return api.delete(`/admin/modules/${moduleId}`)
 }
 
 export function getAdminUsers() {

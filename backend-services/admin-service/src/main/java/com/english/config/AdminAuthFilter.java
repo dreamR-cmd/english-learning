@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Component
 public class AdminAuthFilter extends OncePerRequestFilter {
     private final AdminTokenService tokenService;
 
@@ -51,6 +52,8 @@ public class AdminAuthFilter extends OncePerRequestFilter {
         String uri = request.getRequestURI();
         String method = request.getMethod();
         Map<String, String> mapping = new LinkedHashMap<>();
+        mapping.put("/api/admin/orders", "ORDER_MANAGE");
+        mapping.put("/api/admin/modules", "MODULE_MANAGE");
         mapping.put("/api/admin/users", "USER_MANAGE");
         mapping.put("/api/admin/roles", "ROLE_MANAGE");
         mapping.put("/api/admin/permissions", "PERMISSION_MANAGE");

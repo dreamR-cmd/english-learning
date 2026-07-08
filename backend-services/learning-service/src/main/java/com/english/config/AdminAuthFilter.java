@@ -12,7 +12,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-@Component
 public class AdminAuthFilter extends OncePerRequestFilter {
     private final AdminTokenService tokenService;
 

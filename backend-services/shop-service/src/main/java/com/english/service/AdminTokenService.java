@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 
-@Service
 public class AdminTokenService {
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
