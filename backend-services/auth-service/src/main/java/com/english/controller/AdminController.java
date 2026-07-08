@@ -3,8 +3,6 @@ package com.english.controller;
 import com.english.dto.ApiResult;
 import com.english.entity.AdminPermission;
 import com.english.entity.AdminRole;
-import com.english.entity.ExamModule;
-import com.english.entity.ShopOrder;
 import com.english.entity.User;
 import com.english.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
-@Tag(name = "后台管理接口", description = "后台订单、模块、用户、角色和权限管理接口")
+@Tag(name = "后台认证管理接口", description = "后台用户、角色和权限管理接口")
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
@@ -29,45 +27,6 @@ public class AdminController {
 
     public AdminController(AdminService adminService) {
         this.adminService = adminService;
-    }
-
-    @Operation(summary = "查询全部订单", description = "后台查询所有用户订单。")
-    @GetMapping("/orders")
-    public ApiResult<List<ShopOrder>> getOrders() {
-        return ApiResult.success(adminService.getOrders());
-    }
-
-    @Operation(summary = "更新订单状态", description = "后台更新订单状态，status 可用 pending、paid、canceled。")
-    @PutMapping("/orders/{orderId}/status")
-    public ApiResult<ShopOrder> updateOrderStatus(@PathVariable Long orderId, @RequestBody Map<String, String> body) {
-        return ApiResult.success(adminService.updateOrderStatus(orderId, body.get("status")));
-    }
-
-    @Operation(summary = "后台查询全部模块", description = "查询所有考试模块，用于后台模块管理。")
-    @GetMapping("/modules")
-    public ApiResult<List<ExamModule>> getModules() {
-        return ApiResult.success(adminService.getModules());
-    }
-
-    @Operation(summary = "新建模块", description = "后台新增考试模块。")
-    @PostMapping("/modules")
-    public ApiResult<ExamModule> createModule(@RequestBody ExamModule module) {
-        module.setId(null);
-        return ApiResult.success(adminService.saveModule(module));
-    }
-
-    @Operation(summary = "更新模块", description = "后台更新考试模块。")
-    @PutMapping("/modules/{moduleId}")
-    public ApiResult<ExamModule> updateModule(@PathVariable Long moduleId, @RequestBody ExamModule module) {
-        module.setId(moduleId);
-        return ApiResult.success(adminService.saveModule(module));
-    }
-
-    @Operation(summary = "删除模块", description = "后台删除考试模块。")
-    @DeleteMapping("/modules/{moduleId}")
-    public ApiResult<Void> deleteModule(@PathVariable Long moduleId) {
-        adminService.deleteModule(moduleId);
-        return ApiResult.success("删除成功", null);
     }
 
     @Operation(summary = "查询全部用户", description = "后台查询全部用户，密码字段不会返回。")

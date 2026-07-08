@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/.m2/repository/commons-io/commons-io/2.6/commons-io-2.6.pom" />
+        <option value="$PROJECT_DIR$/.m2/repository/commons-io/commons-io/2.11.0/commons-io-2.11.0.pom" />
+        <option value="$PROJECT_DIR$/backend-services/backend/pom.xml" />
+        <option value="$PROJECT_DIR$/backend-services/gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/backend-services/auth-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend-services/shop-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend-services/user-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend-services/learning-service/pom.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="17" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/out" />
+  </component>
+</project>

@@ -16,3 +16,7 @@ spring:
   sql:
     init:
       mode: never
+
+admin:
+  token:
+    secret: ${ADMIN_TOKEN_SECRET:english-learning-admin-secret}

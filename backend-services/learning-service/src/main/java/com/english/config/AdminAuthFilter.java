@@ -11,8 +11,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @Component
 public class AdminAuthFilter extends OncePerRequestFilter {
@@ -24,7 +22,7 @@ public class AdminAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/api/admin/");
+        return !request.getRequestURI().startsWith("/api/admin/learning/");
     }
 
     @Override
@@ -50,18 +48,8 @@ public class AdminAuthFilter extends OncePerRequestFilter {
 
     private String resolvePermission(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        String method = request.getMethod();
-        Map<String, String> mapping = new LinkedHashMap<>();
-        mapping.put("/api/admin/users", "USER_MANAGE");
-        mapping.put("/api/admin/roles", "ROLE_MANAGE");
-        mapping.put("/api/admin/permissions", "PERMISSION_MANAGE");
-        for (Map.Entry<String, String> entry : mapping.entrySet()) {
-            if (uri.startsWith(entry.getKey())) {
-                if (uri.contains("/roles/") && uri.endsWith("/permissions") && !"GET".equals(method)) {
-                    return "ROLE_MANAGE";
-                }
-                return entry.getValue();
-            }
+        if (uri.startsWith("/api/admin/learning/modules")) {
+            return "MODULE_MANAGE";
         }
         return "ADMIN_DASHBOARD";
     }

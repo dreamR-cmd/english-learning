@@ -14,3 +14,4 @@ backend-services/learning-service/target/
 backend-services/shop-service/target/
 frontend/node_modules/
 frontend/dist/
+backend-services/backend/src/main/resources/*.yaml

@@ -37,3 +37,7 @@ spring:
 shop:
   order:
     timeout-minutes: ${ORDER_TIMEOUT_MINUTES:10}
+
+admin:
+  token:
+    secret: ${ADMIN_TOKEN_SECRET:english-learning-admin-secret}
