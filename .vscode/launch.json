@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "EnglishLearningApplication",
+            "request": "launch",
+            "mainClass": "com.english.EnglishLearningApplication",
+            "projectName": ""
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"

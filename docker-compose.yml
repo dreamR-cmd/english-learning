@@ -211,6 +211,7 @@ services:
         NODE_IMAGE: ${NODE_IMAGE:-node:20-alpine}
     environment:
       VITE_API_TARGET: http://gateway:8081
+      # JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     ports:
       - "3000:3000"
     depends_on:
