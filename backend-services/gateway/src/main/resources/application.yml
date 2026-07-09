@@ -74,6 +74,22 @@ spring:
           predicates:
             - Path=/swagger-ui/**,/swagger-ui.html,/v3/**
 
+admin:
+  token:
+    secret: ${ADMIN_TOKEN_SECRET:english-learning-admin-secret}
+
+gateway:
+  auth:
+    enabled: true
+    exclude-paths:
+      - /api/auth/login
+      - /api/auth/register
+      - /actuator/health
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /v3/api-docs/**
+      - /v3/**
+
 management:
   endpoints:
     web:
@@ -81,4 +97,4 @@ management:
         include: health,info,gateway
   endpoint:
     gateway:
-      enabled: true 
+      enabled: true

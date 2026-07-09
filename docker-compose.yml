@@ -1,0 +1,220 @@
+name: english-learning
+
+x-backend-env: &backend-env
+  DB_URL: jdbc:mysql://mysql:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true
+  DB_USERNAME: root
+  DB_PASSWORD: "123456"
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ""
+  REDIS_DATABASE: "0"
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USERNAME: guest
+  RABBITMQ_PASSWORD: guest
+  ADMIN_TOKEN_SECRET: english-learning-admin-secret
+
+services:
+  mysql:
+    image: ${MYSQL_IMAGE:-mysql:8.0}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: english_learning
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p123456 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - english-learning
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - english-learning
+
+  rabbitmq:
+    image: ${RABBITMQ_IMAGE:-rabbitmq:3-management-alpine}
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - english-learning
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-17}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:17-jre-alpine}
+        SERVICE_DIR: backend-services/auth-service
+    environment:
+      <<: *backend-env
+      AUTH_SERVICE_PORT: "8087"
+    ports:
+      - "8087:8087"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - english-learning
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-17}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:17-jre-alpine}
+        SERVICE_DIR: backend-services/user-service
+    environment:
+      <<: *backend-env
+      USER_SERVICE_PORT: "8088"
+    ports:
+      - "8088:8088"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - english-learning
+
+  learning-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-17}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:17-jre-alpine}
+        SERVICE_DIR: backend-services/learning-service
+    environment:
+      <<: *backend-env
+      LEARNING_SERVICE_PORT: "8089"
+    ports:
+      - "8089:8089"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - english-learning
+
+  shop-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-17}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:17-jre-alpine}
+        SERVICE_DIR: backend-services/shop-service
+    environment:
+      <<: *backend-env
+      SHOP_SERVICE_PORT: "8090"
+      ORDER_TIMEOUT_MINUTES: "10"
+    ports:
+      - "8090:8090"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - english-learning
+
+  admin-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-17}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:17-jre-alpine}
+        SERVICE_DIR: backend-services/admin-service
+    environment:
+      <<: *backend-env
+      ADMIN_SERVICE_PORT: "8091"
+    ports:
+      - "8091:8091"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - english-learning
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-17}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:17-jre-alpine}
+        SERVICE_DIR: backend-services/gateway
+    environment:
+      GATEWAY_PORT: "8081"
+      AUTH_SERVICE_URI: http://auth-service:8087
+      USER_SERVICE_URI: http://user-service:8088
+      LEARNING_SERVICE_URI: http://learning-service:8089
+      SHOP_SERVICE_URI: http://shop-service:8090
+      ADMIN_SERVICE_URI: http://admin-service:8091
+      ADMIN_TOKEN_SECRET: english-learning-admin-secret
+    ports:
+      - "8081:8081"
+    depends_on:
+      - auth-service
+      - user-service
+      - learning-service
+      - shop-service
+      - admin-service
+    networks:
+      - english-learning
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-node:20-alpine}
+    environment:
+      VITE_API_TARGET: http://gateway:8081
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+    networks:
+      - english-learning
+
+volumes:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  english-learning:
+    driver: bridge

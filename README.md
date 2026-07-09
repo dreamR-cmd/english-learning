@@ -25,12 +25,12 @@
 | 层 | 技术 |
 |----|------|
 | 前端 | Vue 3、Vue Router 4、Pinia、Axios、Vite 5 |
-| 网关 | Spring Cloud Gateway、Spring Boot Actuator |
+| 网关 | Spring Cloud Gateway、Spring Boot Actuator、统一登录态认证 |
 | 后端 | Spring Boot 3.2.5、Spring Web、Spring Data JPA、Bean Validation |
 | 数据库 | MySQL 8 |
 | 中间件 | Redis、RabbitMQ |
 | 文档 | springdoc-openapi |
-| 安全 | Argon2 密码哈希、自定义 HMAC 后台 Token、RBAC 权限 |
+| 安全 | Argon2 密码哈希、自定义 HMAC Token、Gateway 统一认证、RBAC 权限 |
 | 构建 | Maven（后端）、npm + Vite（前端） |
 | JDK | Java 17 |
 
@@ -62,8 +62,8 @@ english-learning/
 
 | 服务 | 默认端口 | 职责 |
 |---|---:|---|
-| gateway | 8081 | 统一 API 入口、CORS、路由转发、Swagger 入口转发 |
-| auth-service | 8087 | 登录、注册、密码加密、后台 Token 创建 |
+| gateway | 8081 | 统一 API 入口、CORS、路由转发、登录态认证、用户上下文透传、Swagger 入口转发 |
+| auth-service | 8087 | 登录、注册、密码加密、Token 创建 |
 | user-service | 8088 | 用户资料、错题本、收藏夹、单词进度 |
 | learning-service | 8089 | 考试模块、单词/阅读/听力练习、精选读物、Swagger UI 多文档入口 |
 | shop-service | 8090 | 商品、订单、库存扣减、模拟支付、订单超时取消 |
@@ -168,13 +168,93 @@ RABBITMQ_PASSWORD
 ORDER_TIMEOUT_MINUTES，默认 10 分钟
 ```
 
-### 后台 Token
+### Token 与 Gateway 统一认证
 
-后台 Token 由 `auth-service` 登录成功后返回，`admin-service` 使用相同密钥校验：
+Token 由 `auth-service` 登录成功后返回。`gateway` 使用相同密钥统一校验 `/api/**` 登录态，校验通过后向下游服务透传 `X-User-Id` 和 `X-Token-Expires-At`；`admin-service` 继续使用相同密钥校验后台 RBAC 权限：
 
 ```text
 ADMIN_TOKEN_SECRET
 ```
+
+生产环境必须确保 `auth-service`、`gateway`、`admin-service` 使用同一个 `ADMIN_TOKEN_SECRET`。
+
+## Docker Compose 启动（推荐容器化方式）
+
+项目根目录已提供 Docker 配置，可以一键启动 MySQL、Redis、RabbitMQ、后端微服务和前端。
+
+### 1. 启动
+
+```bash
+docker compose up --build
+```
+
+后台运行：
+
+```bash
+docker compose up -d --build
+```
+
+如果拉取 Docker Hub 镜像超时，可以临时指定可访问的镜像仓库地址。例如：
+
+```powershell
+$env:MAVEN_IMAGE='docker.1ms.run/library/maven:3.9.9-eclipse-temurin-17'
+$env:RUNTIME_IMAGE='docker.1ms.run/library/eclipse-temurin:17-jre-alpine'
+$env:NODE_IMAGE='docker.1ms.run/library/node:20-alpine'
+$env:MYSQL_IMAGE='docker.1ms.run/library/mysql:8.0'
+$env:REDIS_IMAGE='docker.1ms.run/library/redis:7-alpine'
+$env:RABBITMQ_IMAGE='docker.1ms.run/library/rabbitmq:3-management-alpine'
+docker compose up --build
+```
+
+Bash / Git Bash：
+
+```bash
+MAVEN_IMAGE=docker.1ms.run/library/maven:3.9.9-eclipse-temurin-17 \
+RUNTIME_IMAGE=docker.1ms.run/library/eclipse-temurin:17-jre-alpine \
+NODE_IMAGE=docker.1ms.run/library/node:20-alpine \
+MYSQL_IMAGE=docker.1ms.run/library/mysql:8.0 \
+REDIS_IMAGE=docker.1ms.run/library/redis:7-alpine \
+RABBITMQ_IMAGE=docker.1ms.run/library/rabbitmq:3-management-alpine \
+docker compose up --build
+```
+
+### 2. 访问地址
+
+| 服务 | 地址 |
+|---|---|
+| 前端 | http://localhost:3000 |
+| Gateway / API | http://localhost:8081 |
+| Swagger UI | http://localhost:8081/swagger-ui/index.html |
+| RabbitMQ 管理台 | http://localhost:15672 |
+
+RabbitMQ 默认账号密码为 `guest / guest`。
+
+### 3. 常用命令
+
+```bash
+# 查看容器状态
+docker compose ps
+
+# 查看所有服务日志
+docker compose logs -f
+
+# 查看单个服务日志，例如 gateway
+docker compose logs -f gateway
+
+# 停止并删除容器
+docker compose down
+
+# 停止并删除容器，同时清空数据库 / Redis / RabbitMQ 数据卷
+docker compose down -v
+```
+
+### 4. 说明
+
+- MySQL 容器会创建 `english_learning` 数据库。
+- 后端服务复用现有环境变量配置：`DB_URL`、`REDIS_HOST`、`RABBITMQ_HOST`、`ADMIN_TOKEN_SECRET` 等。
+- Gateway 在容器网络中会转发到 `auth-service`、`user-service`、`learning-service`、`shop-service`、`admin-service`。
+- 前端容器通过 `VITE_API_TARGET=http://gateway:8081` 将 `/api`、Swagger 路径代理到 Gateway。
+- 当前 JPA 配置为 `ddl-auto: update`，会自动维护表结构；项目当前没有 SQL 初始化脚本，业务种子数据需按现有方式准备。
 
 ## 快速开始：微服务模式（推荐）
 
@@ -311,10 +391,10 @@ http://localhost:3000
 前端默认将 `/api` 代理到：
 
 ```text
-http://localhost:8080
+http://localhost:8081
 ```
 
-如需连接当前微服务网关端口 `8081`，可以通过环境变量覆盖：
+如需连接其他后端地址，可以通过环境变量覆盖：
 
 ```bash
 VITE_API_TARGET=http://localhost:8081 npm run dev
@@ -511,7 +591,9 @@ POST /api/auth/register
 
 ## 安全与配置建议
 
-- 不要在生产环境使用默认数据库密码、RabbitMQ 密码或后台 Token 密钥。
+- 不要在生产环境使用默认数据库密码、RabbitMQ 密码或 Token 密钥。
+- Gateway 默认会校验除登录、注册、健康检查和 Swagger/OpenAPI 之外的 `/api/**` 请求。
+- 业务服务应逐步改为信任 Gateway 透传的 `X-User-Id`，不要信任前端传入的 `userId`。
 - 生产环境应通过环境变量设置：
   - `DB_URL`
   - `DB_USERNAME`
@@ -520,7 +602,15 @@ POST /api/auth/register
   - `REDIS_*`
   - `RABBITMQ_*`
 - 如果使用 AI 相关配置，API Key 必须通过环境变量注入，不应提交到仓库。
-- 普通用户接口当前仍大量使用请求中的 `userId`，后续建议统一从 Token 中解析当前用户身份。
+- 普通用户接口当前仍大量使用请求中的 `userId`，后续建议统一从 Gateway 透传的 `X-User-Id` 解析当前用户身份。
+
+## 微服务认证设计文档
+
+具体认证链路、Gateway 过滤器、放行路径和后续授权演进说明见：
+
+```text
+docs/microservice-auth-design.md
+```
 
 ## 项目分析文档
 
