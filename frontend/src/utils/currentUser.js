@@ -40,10 +40,13 @@ export function setCurrentUser(nextUser, options = {}) {
 
   if (nextUser) {
     const storedUser = readStoredCurrentUser()
+    const mergedUser = storedUser
+      ? { ...storedUser, ...nextUser }
+      : nextUser
     const expiresAt = options.refreshExpiry || !storedUser?.expiresAt
       ? Date.now() + LOGIN_EXPIRE_MS
       : storedUser.expiresAt
-    const userWithExpiry = { ...nextUser, expiresAt }
+    const userWithExpiry = { ...mergedUser, expiresAt }
 
     currentUser.value = userWithExpiry
     window.sessionStorage.setItem('currentUser', JSON.stringify(userWithExpiry))

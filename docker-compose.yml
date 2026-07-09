@@ -98,8 +98,16 @@ services:
     environment:
       <<: *backend-env
       USER_SERVICE_PORT: "8088"
+      JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     ports:
       - "8088:8088"
+      - "5005:5005"
+    develop:
+      watch:
+        - action: rebuild          # 检测到变化就重新构建镜像并重启容器
+          path: ./user-service/src
+        - action: rebuild
+          path: ./user-service/pom.xml
     depends_on:
       mysql:
         condition: service_healthy

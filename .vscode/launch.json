@@ -1,0 +1,54 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "AdminServiceApplication",
+            "request": "launch",
+            "mainClass": "com.english.AdminServiceApplication",
+            "projectName": "admin-service"
+        },
+        {
+            "type": "java",
+            "name": "AuthServiceApplication",
+            "request": "launch",
+            "mainClass": "com.english.AuthServiceApplication",
+            "projectName": "auth-service"
+        },
+        {
+            "type": "java",
+            "name": "GatewayApplication",
+            "request": "launch",
+            "mainClass": "com.english.gateway.GatewayApplication",
+            "projectName": "english-learning-gateway"
+        },
+        {
+            "type": "java",
+            "name": "LearningServiceApplication",
+            "request": "launch",
+            "mainClass": "com.english.LearningServiceApplication",
+            "projectName": "learning-service"
+        },
+        {
+            "type": "java",
+            "name": "ShopServiceApplication",
+            "request": "launch",
+            "mainClass": "com.english.ShopServiceApplication",
+            "projectName": "shop-service"
+        },
+        {
+            "type": "java",
+            "name": "Docker Remote Debug - UserService",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005,
+            "projectName": "user-service"
+        }
+    ]
+}
