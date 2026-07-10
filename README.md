@@ -17,7 +17,8 @@
 - **错题本与收藏夹**：记录错题，收藏阅读篇目和精选读物。
 - **精选读物**：独立于阅读理解题库的分级读物模块。
 - **学习商城**：商品列表、下单、模拟支付、订单查询。
-- **订单超时取消**：使用 Redis + RabbitMQ 实现库存扣减和订单超时取消。
+- **秒杀排队下单**：使用 Redis 预扣库存、RabbitMQ 异步消费创建订单，前端轮询下单结果。
+- **订单超时取消**：使用 RabbitMQ TTL + 死信队列实现未支付订单超时取消并回补库存。
 - **独立后台管理服务**：后台订单、模块、用户、角色、权限统一由 `admin-service` 承接。
 
 ## 技术栈
@@ -53,7 +54,7 @@ english-learning/
     ├── auth-service/                 # 登录注册与 Token 创建，默认 8087
     ├── user-service/                 # 用户资料、错题、收藏、单词进度，默认 8088
     ├── learning-service/             # 模块、单词/阅读/听力、精选读物，默认 8089
-    ├── shop-service/                 # 商城、订单、库存、超时取消，默认 8090
+    ├── shop-service/                 # 商城、订单、库存、秒杀排队、超时取消，默认 8090
     ├── admin-service/                # 后台管理聚合服务，默认 8091
     └── backend/                      # 保留的单体 Spring Boot 后端，默认 8081
 ```
@@ -66,7 +67,7 @@ english-learning/
 | auth-service | 8087 | 登录、注册、密码加密、Token 创建 |
 | user-service | 8088 | 用户资料、错题本、收藏夹、单词进度 |
 | learning-service | 8089 | 考试模块、单词/阅读/听力练习、精选读物、Swagger UI 多文档入口 |
-| shop-service | 8090 | 商品、订单、库存扣减、模拟支付、订单超时取消 |
+| shop-service | 8090 | 商品、订单、库存扣减、秒杀排队下单、模拟支付、订单超时取消 |
 | admin-service | 8091 | 后台订单、模块、用户、角色、权限管理与后台权限校验 |
 | backend | 8081 | 单体兼容后端，包含主要业务模块 |
 
@@ -151,7 +152,7 @@ REDIS_DATABASE
 
 ### RabbitMQ
 
-商城订单超时取消依赖 RabbitMQ。
+商城秒杀排队下单和订单超时取消依赖 RabbitMQ。
 
 ```text
 RABBITMQ_HOST
@@ -167,6 +168,25 @@ RABBITMQ_PASSWORD
 ```text
 ORDER_TIMEOUT_MINUTES，默认 10 分钟
 ```
+
+商城相关队列：
+
+| 队列 | 说明 |
+|---|---|
+| `english.shop.seckill.order.queue` | 秒杀订单创建队列，消费后写入订单表并扣减数据库库存 |
+| `english.shop.seckill.order.dlq` | 秒杀订单死信队列 |
+| `english.shop.order.delay.queue` | 订单超时延迟队列，消息等待 TTL 到期 |
+| `english.shop.order.timeout.queue` | 订单超时消费队列，取消未支付订单并回补库存 |
+
+秒杀下单流程：
+
+1. 前端先调用 `/api/shop/order-tokens` 获取一次性下单 token。
+2. 前端调用 `/api/shop/seckill-orders`，后端校验 token、Redis 预扣库存并把消息写入 RabbitMQ。
+3. 消费者监听 `english.shop.seckill.order.queue`，异步创建待支付订单。
+4. 前端轮询 `/api/shop/orders/result` 获取 `queued`、`success` 或 `failed` 状态。
+5. 订单创建成功后会继续写入超时取消队列；超时未支付会自动取消并回补库存。
+
+> `backend-services/shop-service` 和保留的单体后端 `backend-services/backend` 都包含商城 MQ 逻辑。
 
 ### Token 与 Gateway 统一认证
 
@@ -551,7 +571,10 @@ POST /api/auth/register
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/products` | 获取商品列表 |
-| POST | `/orders` | 创建订单 |
+| POST | `/order-tokens` | 申请一次性下单 token |
+| POST | `/seckill-orders` | 秒杀下单入队，返回排队状态 |
+| GET | `/orders/result?userId=&requestId=` | 查询秒杀下单结果 |
+| POST | `/orders` | 创建订单（同步兼容接口） |
 | GET | `/orders?userId=&status=` | 查询用户订单 |
 | POST | `/orders/{orderId}/pay` | 模拟支付订单 |
 
