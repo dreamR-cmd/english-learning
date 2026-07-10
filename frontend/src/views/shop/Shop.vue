@@ -62,7 +62,12 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '../../components/NavBar.vue'
-import { createShopOrder, getShopProducts } from '../../utils/api'
+import {
+  createSeckillShopOrder,
+  createShopOrderToken,
+  getSeckillShopOrderResult,
+  getShopProducts
+} from '../../utils/api'
 import { currentUser } from '../../utils/currentUser'
 
 const router = useRouter()
@@ -71,6 +76,7 @@ const products = ref([])
 const buyingProductId = ref(null)
 const message = ref('')
 const errorMessage = ref('')
+const pendingOrderRequestIds = new Map()
 
 function backToModules() {
   router.push('/modules')
@@ -93,19 +99,70 @@ async function selectProduct(product) {
   message.value = ''
   errorMessage.value = ''
   try {
-    const response = await createShopOrder(user.value.id, product.id)
+    const requestId = await getOrderRequestId(product.id)
+    const response = await createSeckillShopOrder(user.value.id, product.id, requestId)
     if (response.data.code !== 200) {
-      errorMessage.value = response.data.message || '涓嬪崟澶辫触'
+      errorMessage.value = response.data.message || '下单失败'
       return
     }
-    message.value = '订单已创建，请在 30 分钟内支付'
-    router.push({ path: '/orders', query: { status: 'pending' } })
+    const submitStatus = response.data.data?.status
+    if (submitStatus === 'failed') {
+      errorMessage.value = response.data.data?.message || '下单失败'
+      return
+    }
+    if (submitStatus === 'success') {
+      message.value = '订单已创建，请在有效期内支付'
+      router.push({ path: '/orders', query: { status: 'pending' } })
+      return
+    }
+    message.value = '订单已进入排队，请稍候...'
+    await waitForSeckillResult(requestId)
   } catch (error) {
     console.error('Failed to create order', error)
-    errorMessage.value = error.response?.data?.message || '下单失败，请稍后重试'
+    errorMessage.value = error.response?.data?.message || error.message || '下单失败，请稍后重试'
   } finally {
+    pendingOrderRequestIds.delete(product.id)
     buyingProductId.value = null
   }
+}
+
+async function waitForSeckillResult(requestId) {
+  for (let i = 0; i < 20; i++) {
+    await sleep(1000)
+    const response = await getSeckillShopOrderResult(user.value.id, requestId)
+    if (response.data.code !== 200) {
+      throw new Error(response.data.message || '查询订单结果失败')
+    }
+    const result = response.data.data
+    if (result?.status === 'success') {
+      message.value = '订单已创建，请在有效期内支付'
+      router.push({ path: '/orders', query: { status: 'pending' } })
+      return
+    }
+    if (result?.status === 'failed') {
+      errorMessage.value = result.message || '下单失败'
+      return
+    }
+    message.value = `订单排队中，请稍候...${i + 1}s`
+  }
+  message.value = '订单仍在排队，可稍后到订单页查看'
+}
+
+function sleep(ms) {
+  return new Promise(resolve => window.setTimeout(resolve, ms))
+}
+
+async function getOrderRequestId(productId) {
+  const existing = pendingOrderRequestIds.get(productId)
+  if (existing) return existing
+
+  const response = await createShopOrderToken(user.value.id, productId)
+  if (response.data.code !== 200 || !response.data.data?.token) {
+    throw new Error(response.data.message || '申请下单token失败')
+  }
+  const requestId = response.data.data.token
+  pendingOrderRequestIds.set(productId, requestId)
+  return requestId
 }
 
 function normalizeProduct(product) {

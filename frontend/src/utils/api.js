@@ -120,8 +120,20 @@ export function getShopProducts() {
   return api.get('/shop/products')
 }
 
-export function createShopOrder(userId, productId) {
-  return api.post('/shop/orders', { userId, productId })
+export function createShopOrderToken(userId, productId) {
+  return api.post('/shop/order-tokens', { userId, productId })
+}
+
+export function createShopOrder(userId, productId, requestId) {
+  return api.post('/shop/orders', { userId, productId, requestId })
+}
+
+export function createSeckillShopOrder(userId, productId, requestId) {
+  return api.post('/shop/seckill-orders', { userId, productId, requestId })
+}
+
+export function getSeckillShopOrderResult(userId, requestId) {
+  return api.get('/shop/orders/result', { params: { userId, requestId } })
 }
 
 export function getShopOrders(userId, status = 'all') {

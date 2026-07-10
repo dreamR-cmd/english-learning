@@ -1,116 +1,324 @@
 package com.english.service.impl;
 
 import com.english.config.ShopRabbitConfig;
+import com.english.dto.OrderTokenResponse;
+import com.english.dto.SeckillOrderMessage;
+import com.english.dto.SeckillOrderResultResponse;
+import com.english.dto.SeckillOrderSubmitResponse;
 import com.english.entity.ShopOrder;
 import com.english.entity.ShopProduct;
 import com.english.mapper.ShopOrderMapper;
 import com.english.mapper.ShopProductMapper;
 import com.english.service.ShopService;
-import org.springframework.amqp.core.MessagePostProcessor;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class ShopServiceImpl implements ShopService {
     private static final Logger log = LoggerFactory.getLogger(ShopServiceImpl.class);
-    // Redis 中商品库存 key 的前缀，最终 key 形如：shop:product:stock:1
     private static final String STOCK_KEY_PREFIX = "shop:product:stock:";
+    private static final String IDEMPOTENT_KEY_PREFIX = "shop:order:idempotent:";
+    private static final String ORDER_TOKEN_KEY_PREFIX = "shop:order:token:";
+    private static final String SECKILL_RESULT_KEY_PREFIX = "shop:seckill:result:";
+    private static final String USED_TOKEN_PREFIX = "USED:";
+    private static final String RESULT_PROCESSING = "processing";
+    private static final String RESULT_SUCCESS_PREFIX = "success:";
+    private static final String RESULT_FAIL_PREFIX = "fail:";
+    private static final String ORDER_LOCK_KEY_PREFIX = "lock:shop:order:";
+    private static final int REQUEST_ID_MAX_LENGTH = 64;
+    private static final long ORDER_TOKEN_EXPIRE_SECONDS = 300;
 
     private final ShopProductMapper productMapper;
     private final ShopOrderMapper orderMapper;
     private final StringRedisTemplate redisTemplate;
     private final RabbitTemplate rabbitTemplate;
+    private final TransactionTemplate transactionTemplate;
+    private final RedissonClient redissonClient;
     private final long orderTimeoutMinutes;
 
     public ShopServiceImpl(ShopProductMapper productMapper,
                            ShopOrderMapper orderMapper,
                            StringRedisTemplate redisTemplate,
                            RabbitTemplate rabbitTemplate,
+                           TransactionTemplate transactionTemplate,
+                           RedissonClient redissonClient,
                            @Value("${shop.order.timeout-minutes:30}") long orderTimeoutMinutes) {
         this.productMapper = productMapper;
         this.orderMapper = orderMapper;
         this.redisTemplate = redisTemplate;
         this.rabbitTemplate = rabbitTemplate;
+        this.transactionTemplate = transactionTemplate;
+        this.redissonClient = redissonClient;
         this.orderTimeoutMinutes = orderTimeoutMinutes;
     }
 
     @Override
     public List<ShopProduct> getProducts() {
         List<ShopProduct> products = productMapper.findByActiveTrueOrderBySortOrderAscIdAsc();
-        /*
-         * 商品库存展示优先看 Redis。
-         *
-         * 原因：高并发下库存扣减先发生在 Redis，Redis 的值比数据库更接近实时可售库存。
-         * 如果 Redis 里还没有这个商品的库存，则用数据库库存初始化缓存。
-         */
         products.forEach(this::syncStockFromRedis);
         return products;
     }
 
     @Override
-    @Transactional
-    public ShopOrder createOrder(Long userId, Long productId) {
-        /*
-         * 下单流程：
-         *
-         * 1. 校验用户和商品。
-         * 2. reserveStock：先扣 Redis，再扣数据库，防止高并发超卖。
-         * 3. 创建待支付订单，设置 30 分钟过期时间。
-         * 4. 尝试发送 RabbitMQ 延迟消息，到期后自动检查并取消未支付订单。
-         *
-         * 注意：这里把“占库存”和“创建订单”放在一个事务里处理数据库状态。
-         * Redis 不参与数据库事务，所以创建订单失败时需要手动 restoreStock 回补 Redis 和数据库库存。
-         */
+    public OrderTokenResponse createOrderToken(Long userId, Long productId) {
+        if (userId == null || productId == null) {
+            throw new RuntimeException("用户和商品不能为空");
+        }
+        productMapper.findById(productId)
+                .filter(item -> Boolean.TRUE.equals(item.getActive()))
+                .orElseThrow(() -> new RuntimeException("商品不存在或已下架"));
+
+        String token = UUID.randomUUID().toString();
+        redisTemplate.opsForValue().set(orderTokenKey(userId, token), String.valueOf(productId),
+                ORDER_TOKEN_EXPIRE_SECONDS, TimeUnit.SECONDS);
+        return new OrderTokenResponse(token, ORDER_TOKEN_EXPIRE_SECONDS);
+    }
+
+    @Override
+    public ShopOrder createOrder(Long userId, Long productId, String requestId) {
+        String normalizedRequestId = normalizeRequestId(requestId);
         if (userId == null || productId == null) {
             throw new RuntimeException("用户和商品不能为空");
         }
 
+        ShopOrder existing = findExistingOrder(userId, normalizedRequestId);
+        if (existing != null) {
+            return existing;
+        }
+
+        validateOrderToken(userId, productId, normalizedRequestId);
+
+        RLock orderLock = redissonClient.getLock(orderLockKey(userId, normalizedRequestId));
+        boolean orderLocked = false;
+        try {
+            orderLocked = orderLock.tryLock(5, 10, TimeUnit.SECONDS);
+            if (!orderLocked) {
+                throw new RuntimeException("订单正在创建中，请勿重复提交");
+            }
+
+            existing = findExistingOrder(userId, normalizedRequestId);
+            if (existing != null) {
+                return existing;
+            }
+
+            return createOrderAfterLock(userId, productId, normalizedRequestId);
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("订单创建被中断，请稍后重试");
+        } finally {
+            if (orderLocked && orderLock.isHeldByCurrentThread()) {
+                orderLock.unlock();
+            }
+        }
+    }
+
+    @Override
+    public SeckillOrderSubmitResponse submitSeckillOrder(Long userId, Long productId, String requestId) {
+        String normalizedRequestId = normalizeRequestId(requestId);
+        if (userId == null || productId == null) {
+            throw new RuntimeException("用户和商品不能为空");
+        }
+
+        ShopOrder existing = findExistingOrder(userId, normalizedRequestId);
+        if (existing != null) {
+            return new SeckillOrderSubmitResponse("success", normalizedRequestId, existing.getId(), "订单已创建");
+        }
+
+        validateOrderToken(userId, productId, normalizedRequestId);
         ShopProduct product = productMapper.findById(productId)
                 .filter(item -> Boolean.TRUE.equals(item.getActive()))
                 .orElseThrow(() -> new RuntimeException("商品不存在或已下架"));
 
-        reserveStock(product);
+        String resultKey = seckillResultKey(userId, normalizedRequestId);
+        String result = redisTemplate.opsForValue().get(resultKey);
+        if (result != null) {
+            return buildSubmitResponseFromResult(normalizedRequestId, result);
+        }
+
+        boolean firstSubmit = Boolean.TRUE.equals(redisTemplate.opsForValue()
+                .setIfAbsent(resultKey, RESULT_PROCESSING, ORDER_TOKEN_EXPIRE_SECONDS, TimeUnit.SECONDS));
+        if (!firstSubmit) {
+            return new SeckillOrderSubmitResponse("queued", normalizedRequestId, null, "订单排队中");
+        }
+
+        boolean redisReserved = false;
+        try {
+            reserveRedisStock(product);
+            redisReserved = true;
+            rabbitTemplate.convertAndSend(
+                    ShopRabbitConfig.ORDER_EXCHANGE,
+                    ShopRabbitConfig.SECKILL_ORDER_ROUTING_KEY,
+                    new SeckillOrderMessage(userId, productId, normalizedRequestId)
+            );
+            log.info("Seckill order queued: userId={}, productId={}, requestId={}", userId, productId, normalizedRequestId);
+            return new SeckillOrderSubmitResponse("queued", normalizedRequestId, null, "订单已进入排队");
+        } catch (RuntimeException error) {
+            if (redisReserved) {
+                restoreRedisStock(productId);
+            }
+            redisTemplate.opsForValue().set(resultKey, RESULT_FAIL_PREFIX + "系统繁忙，请稍后重试", ORDER_TOKEN_EXPIRE_SECONDS, TimeUnit.SECONDS);
+            throw new RuntimeException("秒杀请求提交失败，请稍后重试");
+        }
+    }
+
+    @Override
+    public void consumeSeckillOrder(Long userId, Long productId, String requestId) {
+        String normalizedRequestId = normalizeRequestId(requestId);
+        String resultKey = seckillResultKey(userId, normalizedRequestId);
+        ShopOrder existing = findExistingOrder(userId, normalizedRequestId);
+        if (existing != null) {
+            redisTemplate.opsForValue().set(resultKey, RESULT_SUCCESS_PREFIX + existing.getId(), 1, TimeUnit.DAYS);
+            return;
+        }
 
         try {
+            validateOrderToken(userId, productId, normalizedRequestId);
+            ShopOrder saved = createQueuedOrder(userId, productId, normalizedRequestId);
+            redisTemplate.opsForValue().set(resultKey, RESULT_SUCCESS_PREFIX + saved.getId(), 1, TimeUnit.DAYS);
+            redisTemplate.opsForValue().set(orderTokenKey(userId, normalizedRequestId), USED_TOKEN_PREFIX + saved.getId(), 1, TimeUnit.DAYS);
+            trySendOrderTimeoutMessage(saved.getId());
+            log.info("Seckill order consumed: orderId={}, userId={}, productId={}, requestId={}",
+                    saved.getId(), userId, productId, normalizedRequestId);
+        } catch (RuntimeException error) {
+            restoreRedisStock(productId);
+            redisTemplate.opsForValue().set(resultKey, RESULT_FAIL_PREFIX + error.getMessage(), ORDER_TOKEN_EXPIRE_SECONDS, TimeUnit.SECONDS);
+            log.warn("Seckill order failed: userId={}, productId={}, requestId={}, error={}",
+                    userId, productId, normalizedRequestId, error.getMessage());
+        }
+    }
+
+    @Override
+    public SeckillOrderResultResponse getSeckillOrderResult(Long userId, String requestId) {
+        String normalizedRequestId = normalizeRequestId(requestId);
+        ShopOrder existing = findExistingOrder(userId, normalizedRequestId);
+        if (existing != null) {
+            return new SeckillOrderResultResponse("success", "订单已创建", existing);
+        }
+
+        String result = redisTemplate.opsForValue().get(seckillResultKey(userId, normalizedRequestId));
+        if (result == null || RESULT_PROCESSING.equals(result)) {
+            return new SeckillOrderResultResponse("queued", "订单排队中", null);
+        }
+        if (result.startsWith(RESULT_SUCCESS_PREFIX)) {
+            Long orderId = Long.valueOf(result.substring(RESULT_SUCCESS_PREFIX.length()));
+            ShopOrder order = orderMapper.findById(orderId).orElse(null);
+            return new SeckillOrderResultResponse(order == null ? "queued" : "success",
+                    order == null ? "订单排队中" : "订单已创建", order);
+        }
+        if (result.startsWith(RESULT_FAIL_PREFIX)) {
+            return new SeckillOrderResultResponse("failed", result.substring(RESULT_FAIL_PREFIX.length()), null);
+        }
+        return new SeckillOrderResultResponse("queued", "订单排队中", null);
+    }
+
+    private ShopOrder createOrderAfterLock(Long userId, Long productId, String normalizedRequestId) {
+        String idempotentKey = idempotentKey(userId, normalizedRequestId);
+        boolean locked = Boolean.TRUE.equals(redisTemplate.opsForValue()
+                .setIfAbsent(idempotentKey, "processing", 60, TimeUnit.SECONDS));
+        if (!locked) {
+            ShopOrder createdByOtherRequest = waitForExistingOrder(userId, normalizedRequestId);
+            if (createdByOtherRequest != null) {
+                return createdByOtherRequest;
+            }
+            throw new RuntimeException("订单正在创建中，请勿重复提交");
+        }
+
+        try {
+            return createOrderWithLock(userId, productId, normalizedRequestId, idempotentKey);
+        } catch (RuntimeException error) {
+            redisTemplate.delete(idempotentKey);
+            throw error;
+        }
+    }
+
+    private ShopOrder createOrderWithLock(Long userId, Long productId, String requestId, String idempotentKey) {
+        ShopProduct product = productMapper.findById(productId)
+                .filter(item -> Boolean.TRUE.equals(item.getActive()))
+                .orElseThrow(() -> new RuntimeException("商品不存在或已下架"));
+
+        AtomicBoolean stockReserved = new AtomicBoolean(false);
+        try {
+            ShopOrder saved = transactionTemplate.execute(status -> {
+                reserveStock(product);
+                stockReserved.set(true);
+
+                ShopOrder order = new ShopOrder();
+                order.setOrderNo(buildOrderNo());
+                order.setRequestId(requestId);
+                order.setUserId(userId);
+                order.setProductId(product.getId());
+                order.setProductName(product.getTitle());
+                order.setIcon(product.getIcon());
+                order.setAmount(product.getPrice());
+                order.setStatus(ShopOrder.STATUS_PENDING);
+                order.setExpireAt(LocalDateTime.now().plusMinutes(orderTimeoutMinutes));
+
+                return orderMapper.save(order);
+            });
+            redisTemplate.opsForValue().set(idempotentKey, String.valueOf(saved.getId()), 1, TimeUnit.DAYS);
+            redisTemplate.opsForValue().set(orderTokenKey(userId, requestId), USED_TOKEN_PREFIX + saved.getId(), 1, TimeUnit.DAYS);
+            log.info("Shop order created: orderId={}, orderNo={}, productId={}, userId={}, requestId={}, timeoutMinutes={}",
+                    saved.getId(), saved.getOrderNo(), saved.getProductId(), saved.getUserId(), saved.getRequestId(), orderTimeoutMinutes);
+            trySendOrderTimeoutMessage(saved.getId());
+            return saved;
+        } catch (DataIntegrityViolationException error) {
+            if (stockReserved.get()) {
+                restoreRedisStock(productId);
+            }
+            ShopOrder existing = waitForExistingOrder(userId, requestId);
+            if (existing != null) {
+                return existing;
+            }
+            throw error;
+        } catch (RuntimeException error) {
+            if (stockReserved.get()) {
+                restoreRedisStock(productId);
+            }
+            throw error;
+        }
+    }
+
+    private ShopOrder createQueuedOrder(Long userId, Long productId, String requestId) {
+        ShopProduct product = productMapper.findById(productId)
+                .filter(item -> Boolean.TRUE.equals(item.getActive()))
+                .orElseThrow(() -> new RuntimeException("商品不存在或已下架"));
+
+        return transactionTemplate.execute(status -> {
+            int updated = productMapper.decreaseStock(product.getId());
+            if (updated == 0) {
+                throw new RuntimeException("商品库存不足");
+            }
+
             ShopOrder order = new ShopOrder();
             order.setOrderNo(buildOrderNo());
+            order.setRequestId(requestId);
             order.setUserId(userId);
             order.setProductId(product.getId());
             order.setProductName(product.getTitle());
             order.setIcon(product.getIcon());
             order.setAmount(product.getPrice());
             order.setStatus(ShopOrder.STATUS_PENDING);
-            // 业务过期时间落库，支付时会再次校验，避免只依赖 MQ 消息。
             order.setExpireAt(LocalDateTime.now().plusMinutes(orderTimeoutMinutes));
-            ShopOrder saved = orderMapper.save(order);
-            log.info("Shop order created: orderId={}, orderNo={}, productId={}, userId={}, timeoutMinutes={}",
-                    saved.getId(), saved.getOrderNo(), saved.getProductId(), saved.getUserId(), orderTimeoutMinutes);
-            trySendOrderTimeoutMessage(saved.getId());
-            return saved;
-        } catch (RuntimeException error) {
-            /*
-             * 如果订单保存失败，当前 Hibernate Session 可能已经处于异常状态，
-             * 不能再在同一个事务里执行 JPA 查询或更新，否则会触发
-             * "don't flush the Session after an exception occurs"。
-             *
-             * 数据库扣库存和订单保存处于同一个事务，异常会整体回滚；这里只需要回补
-             * 不参与数据库事务的 Redis 库存。
-             */
-            restoreRedisStock(productId);
-            throw error;
-        }
+            return orderMapper.save(order);
+        });
     }
 
     @Override
@@ -127,11 +335,6 @@ public class ShopServiceImpl implements ShopService {
     @Override
     @Transactional
     public ShopOrder payOrder(Long userId, Long orderId) {
-        /*
-         * 支付接口只允许支付当前用户自己的 pending 订单。
-         * 即使 RabbitMQ 延迟消息还没来，只要订单已过 expireAt，也会主动取消。
-         * 这样可以避免“超时订单刚好被用户支付”的边界问题。
-         */
         ShopOrder order = orderMapper.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() -> new RuntimeException("订单不存在"));
         if (ShopOrder.STATUS_PAID.equals(order.getStatus())) {
@@ -154,12 +357,6 @@ public class ShopServiceImpl implements ShopService {
     @Override
     @Transactional
     public void cancelExpiredOrder(Long orderId) {
-        /*
-         * MQ 消费者和支付接口都可能调用这个方法，所以它必须是幂等的：
-         * - 订单不存在：直接返回。
-         * - 订单不是 pending：说明已支付或已取消，直接返回。
-         * - 只有 pending 订单才会被取消并回补库存。
-         */
         ShopOrder order = orderMapper.findById(orderId).orElse(null);
         if (order == null || !ShopOrder.STATUS_PENDING.equals(order.getStatus())) {
             return;
@@ -173,19 +370,64 @@ public class ShopServiceImpl implements ShopService {
                 order.getId(), order.getOrderNo(), order.getProductId());
     }
 
+    private String normalizeRequestId(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            throw new RuntimeException("requestId不能为空");
+        }
+        String normalized = requestId.trim();
+        if (normalized.length() > REQUEST_ID_MAX_LENGTH) {
+            throw new RuntimeException("requestId长度不能超过64");
+        }
+        return normalized;
+    }
+
+    private ShopOrder findExistingOrder(Long userId, String requestId) {
+        return orderMapper.findByUserIdAndRequestId(userId, requestId).orElse(null);
+    }
+
+    private void validateOrderToken(Long userId, Long productId, String requestId) {
+        String tokenValue = redisTemplate.opsForValue().get(orderTokenKey(userId, requestId));
+        if (tokenValue == null || tokenValue.isBlank()) {
+            throw new RuntimeException("幂等性token无效或已过期");
+        }
+        if (tokenValue.startsWith(USED_TOKEN_PREFIX)) {
+            throw new RuntimeException("幂等性token已使用，请查询订单");
+        }
+        if (!String.valueOf(productId).equals(tokenValue)) {
+            throw new RuntimeException("幂等性token与商品不匹配");
+        }
+    }
+
+    private ShopOrder waitForExistingOrder(Long userId, String requestId) {
+        for (int i = 0; i < 120; i++) {
+            ShopOrder existing = findExistingOrder(userId, requestId);
+            if (existing != null) {
+                return existing;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                return null;
+            }
+        }
+        return null;
+    }
+
     private void reserveStock(ShopProduct product) {
+        reserveRedisStock(product);
+
+        int updated = productMapper.decreaseStock(product.getId());
+        if (updated == 0) {
+            redisTemplate.opsForValue().increment(stockKey(product.getId()));
+            throw new RuntimeException("商品库存不足");
+        }
+    }
+
+    private void reserveRedisStock(ShopProduct product) {
         String stockKey = stockKey(product.getId());
-        /*
-         * setIfAbsent 用数据库库存初始化 Redis 库存缓存。
-         * 设置 1 天过期时间是为了避免缓存永久脏数据；真实项目可根据业务改成更长或主动刷新。
-         */
         redisTemplate.opsForValue().setIfAbsent(stockKey, String.valueOf(product.getStock()), 1, TimeUnit.DAYS);
 
-        /*
-         * Redis decrement 是单线程原子操作。
-         * 多个用户同时下单时，只有库存数以内的请求能扣到 >= 0 的结果。
-         * 如果扣成负数，说明库存已经不够，需要立刻 increment 回补。
-         */
         Long stock = redisTemplate.opsForValue().decrement(stockKey);
         log.info("Redis stock reserved: productId={}, stockKey={}, remainingStock={}",
                 product.getId(), stockKey, stock);
@@ -193,28 +435,9 @@ public class ShopServiceImpl implements ShopService {
             redisTemplate.opsForValue().increment(stockKey);
             throw new RuntimeException("商品库存不足");
         }
-
-        /*
-         * 数据库也必须做原子扣减，不能先查库存再 save。
-         * decreaseStock 的 SQL 条件包含 stock > 0：
-         * update shop_products set stock = stock - 1 where id = ? and stock > 0
-         * 返回 0 表示数据库层面库存不足，需要把 Redis 刚才扣掉的库存回补。
-         */
-        int updated = productMapper.decreaseStock(product.getId());
-        if (updated == 0) {
-            redisTemplate.opsForValue().increment(stockKey);
-            throw new RuntimeException("商品库存不足");
-        }
     }
 
     private void restoreStock(Long productId) {
-        /*
-         * 回补库存场景：
-         * - 创建订单失败。
-         * - 订单超时未支付被取消。
-         *
-         * 这里同时回补数据库和 Redis，保证后续商品列表看到的库存与数据库最终一致。
-         */
         productMapper.findById(productId).ifPresent(product -> {
             productMapper.increaseStock(productId);
             redisTemplate.opsForValue().increment(stockKey(productId));
@@ -229,25 +452,18 @@ public class ShopServiceImpl implements ShopService {
         String stockKey = stockKey(product.getId());
         String cached = redisTemplate.opsForValue().get(stockKey);
         if (cached == null) {
-            // 缓存未命中时，把数据库库存写入 Redis，之后商品页读到的就是缓存库存。
             redisTemplate.opsForValue().set(stockKey, String.valueOf(product.getStock()), 1, TimeUnit.DAYS);
             return;
         }
 
         try {
-            // 用 Redis 库存覆盖返回给前端的 stock 字段，让商品页展示更实时的可售库存。
             product.setStock(Integer.valueOf(cached));
         } catch (NumberFormatException ignored) {
-            // 如果缓存被误写成非数字，丢弃脏值并用数据库库存重建缓存。
             redisTemplate.opsForValue().set(stockKey, String.valueOf(product.getStock()), 1, TimeUnit.DAYS);
         }
     }
 
     private void sendOrderTimeoutMessage(Long orderId) {
-        /*
-         * 给单条消息设置 TTL。
-         * 消息在延迟队列中过期后，会通过死信配置进入超时队列。
-         */
         int ttl = Math.toIntExact(TimeUnit.MINUTES.toMillis(orderTimeoutMinutes));
         MessagePostProcessor processor = message -> {
             message.getMessageProperties().setExpiration(String.valueOf(ttl));
@@ -275,8 +491,35 @@ public class ShopServiceImpl implements ShopService {
         return STOCK_KEY_PREFIX + productId;
     }
 
+    private String idempotentKey(Long userId, String requestId) {
+        return IDEMPOTENT_KEY_PREFIX + userId + ":" + requestId;
+    }
+
+    private String orderTokenKey(Long userId, String requestId) {
+        return ORDER_TOKEN_KEY_PREFIX + userId + ":" + requestId;
+    }
+
+    private String orderLockKey(Long userId, String requestId) {
+        return ORDER_LOCK_KEY_PREFIX + userId + ":" + requestId;
+    }
+
+    private String seckillResultKey(Long userId, String requestId) {
+        return SECKILL_RESULT_KEY_PREFIX + userId + ":" + requestId;
+    }
+
+    private SeckillOrderSubmitResponse buildSubmitResponseFromResult(String requestId, String result) {
+        if (result.startsWith(RESULT_SUCCESS_PREFIX)) {
+            return new SeckillOrderSubmitResponse("success", requestId,
+                    Long.valueOf(result.substring(RESULT_SUCCESS_PREFIX.length())), "订单已创建");
+        }
+        if (result.startsWith(RESULT_FAIL_PREFIX)) {
+            return new SeckillOrderSubmitResponse("failed", requestId, null,
+                    result.substring(RESULT_FAIL_PREFIX.length()));
+        }
+        return new SeckillOrderSubmitResponse("queued", requestId, null, "订单排队中");
+    }
+
     private String buildOrderNo() {
-        // 订单号由时间戳 + UUID 片段组成，便于排查且基本避免并发重复。
         String prefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         return "EL" + prefix + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
     }

@@ -16,3 +16,4 @@ backend-services/admin-service/target/
 frontend/node_modules/
 frontend/dist/
 backend-services/backend/src/main/resources/*.yaml
+docs/*.md

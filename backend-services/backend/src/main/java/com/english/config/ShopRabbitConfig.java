@@ -1,6 +1,8 @@
 package com.english.config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,11 +24,20 @@ public class ShopRabbitConfig {
     public static final String ORDER_TIMEOUT_QUEUE = "english.shop.order.timeout.queue";
     public static final String ORDER_DELAY_ROUTING_KEY = "order.delay";
     public static final String ORDER_TIMEOUT_ROUTING_KEY = "order.timeout";
+    public static final String SECKILL_ORDER_QUEUE = "english.shop.seckill.order.queue";
+    public static final String SECKILL_ORDER_DEAD_QUEUE = "english.shop.seckill.order.dlq";
+    public static final String SECKILL_ORDER_ROUTING_KEY = "seckill.order";
+    public static final String SECKILL_ORDER_DEAD_ROUTING_KEY = "seckill.order.dead";
 
     @Bean
     public DirectExchange orderExchange() {
         // durable=true 表示 RabbitMQ 重启后交换机仍然存在；autoDelete=false 表示不自动删除。
         return new DirectExchange(ORDER_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public MessageConverter rabbitMessageConverter() {
+        return new Jackson2JsonMessageConverter();
     }
 
     @Bean
@@ -49,6 +60,19 @@ public class ShopRabbitConfig {
     }
 
     @Bean
+    public Queue seckillOrderQueue() {
+        return QueueBuilder.durable(SECKILL_ORDER_QUEUE)
+                .deadLetterExchange(ORDER_EXCHANGE)
+                .deadLetterRoutingKey(SECKILL_ORDER_DEAD_ROUTING_KEY)
+                .build();
+    }
+
+    @Bean
+    public Queue seckillOrderDeadQueue() {
+        return QueueBuilder.durable(SECKILL_ORDER_DEAD_QUEUE).build();
+    }
+
+    @Bean
     public Binding orderDelayBinding() {
         return BindingBuilder.bind(orderDelayQueue()).to(orderExchange()).with(ORDER_DELAY_ROUTING_KEY);
     }
@@ -56,5 +80,15 @@ public class ShopRabbitConfig {
     @Bean
     public Binding orderTimeoutBinding() {
         return BindingBuilder.bind(orderTimeoutQueue()).to(orderExchange()).with(ORDER_TIMEOUT_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding seckillOrderBinding() {
+        return BindingBuilder.bind(seckillOrderQueue()).to(orderExchange()).with(SECKILL_ORDER_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding seckillOrderDeadBinding() {
+        return BindingBuilder.bind(seckillOrderDeadQueue()).to(orderExchange()).with(SECKILL_ORDER_DEAD_ROUTING_KEY);
     }
 }

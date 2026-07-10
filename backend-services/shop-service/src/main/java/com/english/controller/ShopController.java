@@ -2,7 +2,12 @@ package com.english.controller;
 
 import com.english.dto.ApiResult;
 import com.english.dto.CreateOrderRequest;
+import com.english.dto.CreateOrderTokenRequest;
+import com.english.dto.CreateSeckillOrderRequest;
+import com.english.dto.OrderTokenResponse;
 import com.english.dto.PayOrderRequest;
+import com.english.dto.SeckillOrderResultResponse;
+import com.english.dto.SeckillOrderSubmitResponse;
 import com.english.entity.ShopOrder;
 import com.english.entity.ShopProduct;
 import com.english.service.ShopService;
@@ -30,7 +35,17 @@ public class ShopController {
         return ApiResult.success(shopService.getProducts());
     }
 
-    @Operation(summary = "创建订单", description = "创建待支付订单并扣减库存。请求体字段：userId 用户 ID，productId 商品 ID。")
+    @Operation(summary = "申请下单幂等性 token", description = "为一次下单意图签发 token，前端创建订单时需要带回该 token。")
+    @PostMapping("/order-tokens")
+    public ApiResult<OrderTokenResponse> createOrderToken(@RequestBody CreateOrderTokenRequest request) {
+        try {
+            return ApiResult.success(shopService.createOrderToken(request.getUserId(), request.getProductId()));
+        } catch (RuntimeException e) {
+            return ApiResult.error(400, e.getMessage());
+        }
+    }
+
+    @Operation(summary = "创建订单", description = "创建待支付订单并扣减库存。requestId 为后端签发的下单幂等性 token。")
     @PostMapping("/orders")
     public ApiResult<ShopOrder> createOrder(@RequestBody CreateOrderRequest request) {
         try {
@@ -38,7 +53,32 @@ public class ShopController {
              * 下单接口只创建“待支付”订单。
              * 支付动作单独走 /orders/{orderId}/pay，便于演示订单超时取消流程。
              */
-            return ApiResult.success("订单已创建，请在 30 分钟内支付", shopService.createOrder(request.getUserId(), request.getProductId()));
+            return ApiResult.success("订单已创建，请在有效期内支付", shopService.createOrder(request.getUserId(), request.getProductId(), request.getRequestId()));
+        } catch (RuntimeException e) {
+            return ApiResult.error(400, e.getMessage());
+        }
+    }
+
+    @Operation(summary = "秒杀下单入队", description = "将下单请求写入 RabbitMQ 队列，立即返回排队状态，前端再轮询订单结果。")
+    @PostMapping("/seckill-orders")
+    public ApiResult<SeckillOrderSubmitResponse> submitSeckillOrder(@RequestBody CreateSeckillOrderRequest request) {
+        try {
+            return ApiResult.success("订单已进入排队", shopService.submitSeckillOrder(
+                    request.getUserId(), request.getProductId(), request.getRequestId()));
+        } catch (RuntimeException e) {
+            return ApiResult.error(400, e.getMessage());
+        }
+    }
+
+    @Operation(summary = "查询秒杀订单结果", description = "根据用户 ID 和 requestId 查询秒杀订单是否已创建成功。")
+    @GetMapping("/orders/result")
+    public ApiResult<SeckillOrderResultResponse> getSeckillOrderResult(
+            @Parameter(description = "用户 ID", required = true)
+            @RequestParam Long userId,
+            @Parameter(description = "下单 token / requestId", required = true)
+            @RequestParam String requestId) {
+        try {
+            return ApiResult.success(shopService.getSeckillOrderResult(userId, requestId));
         } catch (RuntimeException e) {
             return ApiResult.error(400, e.getMessage());
         }

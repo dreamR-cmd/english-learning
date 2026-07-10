@@ -1,6 +1,6 @@
 package com.english.dto;
 
-public class CreateOrderRequest {
+public class CreateSeckillOrderRequest {
     private Long userId;
     private Long productId;
     private String requestId;
