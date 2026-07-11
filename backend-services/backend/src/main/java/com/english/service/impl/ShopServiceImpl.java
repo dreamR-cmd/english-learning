@@ -20,14 +20,17 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +38,11 @@ import java.util.concurrent.TimeUnit;
 public class ShopServiceImpl implements ShopService {
     private static final Logger log = LoggerFactory.getLogger(ShopServiceImpl.class);
     private static final String STOCK_KEY_PREFIX = "shop:product:stock:";
+    private static final String PRODUCT_NULL_KEY_PREFIX = "shop:product:null:";
+    private static final String PRODUCT_BLOOM_ACTIVE_KEY = "shop:product:bloom:active";
+    private static final String PRODUCT_BLOOM_KEY_A = "shop:product:bloom:a";
+    private static final String PRODUCT_BLOOM_KEY_B = "shop:product:bloom:b";
+    private static final String PRODUCT_BLOOM_REBUILD_LOCK_KEY = "lock:shop:product:bloom:rebuild";
     private static final String IDEMPOTENT_KEY_PREFIX = "shop:order:idempotent:";
     private static final String ORDER_TOKEN_KEY_PREFIX = "shop:order:token:";
     private static final String SECKILL_RESULT_KEY_PREFIX = "shop:seckill:result:";
@@ -45,6 +53,11 @@ public class ShopServiceImpl implements ShopService {
     private static final String ORDER_LOCK_KEY_PREFIX = "lock:shop:order:";
     private static final int REQUEST_ID_MAX_LENGTH = 64;
     private static final long ORDER_TOKEN_EXPIRE_SECONDS = 300;
+    private static final long MAX_PRODUCT_ID = 100_000_000L;
+    private static final long PRODUCT_BLOOM_BITMAP_SIZE = 1_000_000L;
+    private static final int PRODUCT_BLOOM_HASH_COUNT = 5;
+    private static final long PRODUCT_NULL_CACHE_BASE_SECONDS = 180;
+    private static final long PRODUCT_NULL_CACHE_RANDOM_SECONDS = 120;
 
     private final ShopProductMapper productMapper;
     private final ShopOrderMapper orderMapper;
@@ -73,8 +86,19 @@ public class ShopServiceImpl implements ShopService {
     @Override
     public List<ShopProduct> getProducts() {
         List<ShopProduct> products = productMapper.findByActiveTrueOrderBySortOrderAscIdAsc();
+        products.forEach(product -> addProductToBloom(product.getId()));
         products.forEach(this::syncStockFromRedis);
         return products;
+    }
+
+    @PostConstruct
+    public void initProductBloomFilter() {
+        rebuildProductBloomFilter();
+    }
+
+    @Scheduled(fixedDelayString = "${shop.product.bloom.rebuild-delay-ms:600000}")
+    public void scheduledRebuildProductBloomFilter() {
+        rebuildProductBloomFilter();
     }
 
     @Override
@@ -82,9 +106,7 @@ public class ShopServiceImpl implements ShopService {
         if (userId == null || productId == null) {
             throw new RuntimeException("用户和商品不能为空");
         }
-        productMapper.findById(productId)
-                .filter(item -> Boolean.TRUE.equals(item.getActive()))
-                .orElseThrow(() -> new RuntimeException("商品不存在或已下架"));
+        findActiveProductOrThrow(productId);
 
         String token = UUID.randomUUID().toString();
         redisTemplate.opsForValue().set(orderTokenKey(userId, token), String.valueOf(productId),
@@ -143,9 +165,7 @@ public class ShopServiceImpl implements ShopService {
         }
 
         validateOrderToken(userId, productId, normalizedRequestId);
-        ShopProduct product = productMapper.findById(productId)
-                .filter(item -> Boolean.TRUE.equals(item.getActive()))
-                .orElseThrow(() -> new RuntimeException("商品不存在或已下架"));
+        ShopProduct product = findActiveProductOrThrow(productId);
 
         String resultKey = seckillResultKey(userId, normalizedRequestId);
         String result = redisTemplate.opsForValue().get(resultKey);
@@ -250,9 +270,7 @@ public class ShopServiceImpl implements ShopService {
     }
 
     private ShopOrder createOrderWithLock(Long userId, Long productId, String requestId, String idempotentKey) {
-        ShopProduct product = productMapper.findById(productId)
-                .filter(item -> Boolean.TRUE.equals(item.getActive()))
-                .orElseThrow(() -> new RuntimeException("商品不存在或已下架"));
+        ShopProduct product = findActiveProductOrThrow(productId);
 
         AtomicBoolean stockReserved = new AtomicBoolean(false);
         try {
@@ -297,9 +315,7 @@ public class ShopServiceImpl implements ShopService {
     }
 
     private ShopOrder createQueuedOrder(Long userId, Long productId, String requestId) {
-        ShopProduct product = productMapper.findById(productId)
-                .filter(item -> Boolean.TRUE.equals(item.getActive()))
-                .orElseThrow(() -> new RuntimeException("商品不存在或已下架"));
+        ShopProduct product = findActiveProductOrThrow(productId);
 
         return transactionTemplate.execute(status -> {
             int updated = productMapper.decreaseStock(product.getId());
@@ -463,6 +479,114 @@ public class ShopServiceImpl implements ShopService {
         }
     }
 
+    private ShopProduct findActiveProductOrThrow(Long productId) {
+        validateProductId(productId);
+        if (!mightProductExist(productId)) {
+            throw new RuntimeException("商品不存在或已下架");
+        }
+        String nullKey = productNullKey(productId);
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(nullKey))) {
+            throw new RuntimeException("商品不存在或已下架");
+        }
+
+        ShopProduct product = productMapper.findById(productId)
+                .filter(item -> Boolean.TRUE.equals(item.getActive()))
+                .orElse(null);
+        if (product == null) {
+            cacheNullProduct(productId);
+            throw new RuntimeException("商品不存在或已下架");
+        }
+
+        redisTemplate.delete(nullKey);
+        addProductToBloom(productId);
+        return product;
+    }
+
+    private void validateProductId(Long productId) {
+        if (productId == null || productId <= 0 || productId > MAX_PRODUCT_ID) {
+            throw new RuntimeException("商品不存在或已下架");
+        }
+    }
+
+    private boolean mightProductExist(Long productId) {
+        String bloomKey = activeProductBloomKey();
+        if (bloomKey == null) {
+            return true;
+        }
+        for (int seed = 0; seed < PRODUCT_BLOOM_HASH_COUNT; seed++) {
+            if (!Boolean.TRUE.equals(redisTemplate.opsForValue().getBit(bloomKey, bloomOffset(productId, seed)))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void cacheNullProduct(Long productId) {
+        long ttl = PRODUCT_NULL_CACHE_BASE_SECONDS
+                + ThreadLocalRandom.current().nextLong(PRODUCT_NULL_CACHE_RANDOM_SECONDS + 1);
+        redisTemplate.opsForValue().set(productNullKey(productId), "1", ttl, TimeUnit.SECONDS);
+    }
+
+    private void addProductToBloom(Long productId) {
+        if (productId == null || productId <= 0 || productId > MAX_PRODUCT_ID) {
+            return;
+        }
+        String bloomKey = activeProductBloomKey();
+        if (bloomKey == null) {
+            bloomKey = PRODUCT_BLOOM_KEY_A;
+            redisTemplate.opsForValue().set(PRODUCT_BLOOM_ACTIVE_KEY, bloomKey);
+        }
+        addProductToBloom(bloomKey, productId);
+    }
+
+    private void addProductToBloom(String bloomKey, Long productId) {
+        for (int seed = 0; seed < PRODUCT_BLOOM_HASH_COUNT; seed++) {
+            redisTemplate.opsForValue().setBit(bloomKey, bloomOffset(productId, seed), true);
+        }
+    }
+
+    private void rebuildProductBloomFilter() {
+        boolean locked = Boolean.TRUE.equals(redisTemplate.opsForValue()
+                .setIfAbsent(PRODUCT_BLOOM_REBUILD_LOCK_KEY, "1", 5, TimeUnit.MINUTES));
+        if (!locked) {
+            return;
+        }
+        try {
+            String currentKey = activeProductBloomKey();
+            String nextKey = PRODUCT_BLOOM_KEY_A.equals(currentKey) ? PRODUCT_BLOOM_KEY_B : PRODUCT_BLOOM_KEY_A;
+            redisTemplate.delete(nextKey);
+            productMapper.findByActiveTrueOrderBySortOrderAscIdAsc()
+                    .forEach(product -> addProductToBloom(nextKey, product.getId()));
+            redisTemplate.opsForValue().set(PRODUCT_BLOOM_ACTIVE_KEY, nextKey);
+            if (currentKey != null && !currentKey.equals(nextKey)) {
+                redisTemplate.expire(currentKey, 1, TimeUnit.DAYS);
+            }
+            log.info("Product bloom filter rebuilt: activeKey={}", nextKey);
+        } catch (RuntimeException error) {
+            log.warn("Failed to rebuild product bloom filter", error);
+        } finally {
+            redisTemplate.delete(PRODUCT_BLOOM_REBUILD_LOCK_KEY);
+        }
+    }
+
+    private String activeProductBloomKey() {
+        String key = redisTemplate.opsForValue().get(PRODUCT_BLOOM_ACTIVE_KEY);
+        if (PRODUCT_BLOOM_KEY_A.equals(key) || PRODUCT_BLOOM_KEY_B.equals(key)) {
+            return key;
+        }
+        return null;
+    }
+
+    private long bloomOffset(Long productId, int seed) {
+        long hash = productId ^ (0x9E3779B97F4A7C15L * (seed + 1));
+        hash ^= (hash >>> 33);
+        hash *= 0xff51afd7ed558ccdL;
+        hash ^= (hash >>> 33);
+        hash *= 0xc4ceb9fe1a85ec53L;
+        hash ^= (hash >>> 33);
+        return Math.floorMod(hash, PRODUCT_BLOOM_BITMAP_SIZE);
+    }
+
     private void sendOrderTimeoutMessage(Long orderId) {
         int ttl = Math.toIntExact(TimeUnit.MINUTES.toMillis(orderTimeoutMinutes));
         MessagePostProcessor processor = message -> {
@@ -489,6 +613,10 @@ public class ShopServiceImpl implements ShopService {
 
     private String stockKey(Long productId) {
         return STOCK_KEY_PREFIX + productId;
+    }
+
+    private String productNullKey(Long productId) {
+        return PRODUCT_NULL_KEY_PREFIX + productId;
     }
 
     private String idempotentKey(Long userId, String requestId) {

@@ -4,6 +4,12 @@ server:
 spring:
   application:
     name: english-learning-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
   cloud:
     gateway:
       globalcors:
@@ -23,6 +29,13 @@ spring:
           uri: ${AUTH_SERVICE_URI:http://localhost:8087}
           predicates:
             - Path=/api/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
         - id: admin-service
           uri: ${ADMIN_SERVICE_URI:http://localhost:8091}
           predicates:
@@ -35,10 +48,28 @@ spring:
           uri: ${LEARNING_SERVICE_URI:http://localhost:8089}
           predicates:
             - Path=/api/modules/**,/api/practice/**,/api/selected-readings/**
+        - id: shop-order-service
+          uri: ${SHOP_SERVICE_URI:http://localhost:8090}
+          predicates:
+            - Path=/api/shop/orders
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: 3
+                redis-rate-limiter.burstCapacity: 10
+                redis-rate-limiter.requestedTokens: 1
         - id: shop-service
           uri: ${SHOP_SERVICE_URI:http://localhost:8090}
           predicates:
             - Path=/api/shop/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 30
+                redis-rate-limiter.requestedTokens: 1
         - id: auth-service-openapi
           uri: ${AUTH_SERVICE_URI:http://localhost:8087}
           predicates:

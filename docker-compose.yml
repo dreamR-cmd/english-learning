@@ -191,6 +191,10 @@ services:
       LEARNING_SERVICE_URI: http://learning-service:8089
       SHOP_SERVICE_URI: http://shop-service:8090
       ADMIN_SERVICE_URI: http://admin-service:8091
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      REDIS_DATABASE: "0"
       ADMIN_TOKEN_SECRET: english-learning-admin-secret
     ports:
       - "8081:8081"
@@ -200,6 +204,7 @@ services:
       - learning-service
       - shop-service
       - admin-service
+      - redis
     networks:
       - english-learning
 
