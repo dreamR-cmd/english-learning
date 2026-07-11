@@ -17,8 +17,12 @@
 - **错题本与收藏夹**：记录错题，收藏阅读篇目和精选读物。
 - **精选读物**：独立于阅读理解题库的分级读物模块。
 - **学习商城**：商品列表、下单、模拟支付、订单查询。
+- **后端签发下单幂等性 token**：前端下单前先向后端申请一次性 token，避免连续点击或并发重放生成重复订单。
+- **订单防重复与防超卖**：使用 Gateway 限流、幂等性 token、Redisson 分布式锁、Redis 幂等 key、数据库唯一约束和数据库原子扣库存多层兜底。
 - **秒杀排队下单**：使用 Redis 预扣库存、RabbitMQ 异步消费创建订单，前端轮询下单结果。
 - **订单超时取消**：使用 RabbitMQ TTL + 死信队列实现未支付订单超时取消并回补库存。
+- **商城缓存穿透防护**：商品 ID 查询加入非法 ID 拦截、Redis Bitmap 布隆过滤器、空值缓存和定时双 Buffer 重建。
+- **Gateway 令牌桶限流**：登录、商城和下单接口在网关层使用 RedisRateLimiter 削峰限流。
 - **独立后台管理服务**：后台订单、模块、用户、角色、权限统一由 `admin-service` 承接。
 
 ## 技术栈
@@ -26,10 +30,10 @@
 | 层 | 技术 |
 |----|------|
 | 前端 | Vue 3、Vue Router 4、Pinia、Axios、Vite 5 |
-| 网关 | Spring Cloud Gateway、Spring Boot Actuator、统一登录态认证 |
+| 网关 | Spring Cloud Gateway、Spring Boot Actuator、统一登录态认证、RedisRateLimiter 令牌桶限流 |
 | 后端 | Spring Boot 3.2.5、Spring Web、Spring Data JPA、Bean Validation |
 | 数据库 | MySQL 8 |
-| 中间件 | Redis、RabbitMQ |
+| 中间件 | Redis、RabbitMQ、Redisson |
 | 文档 | springdoc-openapi |
 | 安全 | Argon2 密码哈希、自定义 HMAC Token、Gateway 统一认证、RBAC 权限 |
 | 构建 | Maven（后端）、npm + Vite（前端） |
@@ -91,6 +95,16 @@ english-learning/
 | `/v3/api-docs/learning` | learning-service OpenAPI |
 | `/v3/api-docs/shop` | shop-service OpenAPI |
 
+Gateway 当前还在重点接口上配置了令牌桶限流：
+
+| 路径 | 限流对象 | replenishRate | burstCapacity |
+|---|---|---:|---:|
+| `/api/auth/**` | IP | 5 | 20 |
+| `/api/shop/orders` | 用户，拿不到用户时按 IP | 3 | 10 |
+| `/api/shop/**` | 用户，拿不到用户时按 IP | 10 | 30 |
+
+其中 `replenishRate` 表示每秒补充的令牌数，`burstCapacity` 表示令牌桶容量。超过限流阈值时 Gateway 返回 `HTTP 429 Too Many Requests`。
+
 ## 环境要求
 
 - JDK 17+
@@ -139,7 +153,7 @@ spring.sql.init.mode: never
 
 ### Redis
 
-商城库存缓存和原子扣减依赖 Redis。
+商城库存缓存、订单幂等、下单 token、Gateway 限流、商品布隆过滤器和空值缓存依赖 Redis。
 
 ```text
 REDIS_HOST
@@ -149,6 +163,29 @@ REDIS_DATABASE
 ```
 
 默认：`localhost:6379`。
+
+商城相关 Redis Key：
+
+| Key | 说明 |
+|---|---|
+| `shop:product:stock:{productId}` | 商品库存缓存 |
+| `shop:order:token:{userId}:{token}` | 后端签发的一次性下单 token |
+| `shop:order:idempotent:{userId}:{requestId}` | 订单幂等结果 |
+| `lock:shop:order:{userId}:{requestId}` | Redisson 下单分布式锁 |
+| `shop:product:bloom:active` | 当前商品布隆过滤器指针 |
+| `shop:product:bloom:a` / `shop:product:bloom:b` | 商品布隆过滤器双 Buffer |
+| `shop:product:null:{productId}` | 不存在或已下架商品的空值缓存 |
+
+商品缓存穿透防护流程：
+
+```text
+非法 productId 拦截
+  -> Redis Bitmap 布隆过滤器
+  -> 空值缓存
+  -> 数据库查询
+```
+
+布隆过滤器默认每 10 分钟重建一次，采用 `bloom:a` / `bloom:b` 双 Buffer 切换，避免重建期间短暂为空导致正常商品被误拦截。
 
 ### RabbitMQ
 
@@ -187,6 +224,19 @@ ORDER_TIMEOUT_MINUTES，默认 10 分钟
 5. 订单创建成功后会继续写入超时取消队列；超时未支付会自动取消并回补库存。
 
 > `backend-services/shop-service` 和保留的单体后端 `backend-services/backend` 都包含商城 MQ 逻辑。
+
+普通同步下单兼容接口 `/api/shop/orders` 也使用同一套后端签发 token。`requestId` 字段当前保留，但含义已经变成“后端签发的下单幂等性 token”。
+
+订单防重复链路：
+
+```text
+Gateway 令牌桶限流
+  -> 后端签发幂等性 token
+  -> Redisson 分布式锁
+  -> Redis 幂等 key
+  -> 数据库唯一约束
+  -> 数据库原子扣库存
+```
 
 ### Token 与 Gateway 统一认证
 
@@ -642,3 +692,18 @@ docs/microservice-auth-design.md
 ```text
 PROJECT_ANALYSIS.md
 ```
+
+## 专题文档
+
+最近补充的核心专题文档：
+
+| 文档 | 说明 |
+|---|---|
+| `docs/interview-study-guide.md` | 项目学习与面试重点总览 |
+| `docs/microservice-auth-design.md` | 微服务认证和 Gateway 统一鉴权设计 |
+| `docs/gateway-rate-limit-report.md` | Gateway 令牌桶限流说明和测试结果 |
+| `docs/order-idempotency-test-report.md` | 订单幂等性压测报告 |
+| `docs/order-redisson-lock-report.md` | Redisson 分布式锁引入说明 |
+| `docs/order-server-token-report.md` | 后端签发下单幂等性 token 说明 |
+| `docs/order-stress-test-report.md` | 订单高并发压测报告 |
+| `docs/shop-cache-penetration-report.md` | 商城缓存穿透防护说明 |
