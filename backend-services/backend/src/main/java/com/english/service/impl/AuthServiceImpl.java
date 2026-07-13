@@ -45,6 +45,9 @@ public class AuthServiceImpl implements AuthService {
     public LoginUserInfo login(String username, String password) {
         User user = userMapper.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
+        if (Boolean.FALSE.equals(user.getEnabled())) {
+            throw new RuntimeException("用户已被禁用");
+        }
         if (!passwordMatches(password, user.getPassword())) {
             throw new RuntimeException("密码错误");
         }

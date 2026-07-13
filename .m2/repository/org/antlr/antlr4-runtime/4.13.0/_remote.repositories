@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
+#Mon Jul 13 14:52:45 CST 2026
 antlr4-runtime-4.13.0.jar>aliyunmaven=
-antlr4-runtime-4.13.0.jar>central=
 antlr4-runtime-4.13.0.pom>aliyunmaven=
 antlr4-runtime-4.13.0.pom>central=
+antlr4-runtime-4.13.0.jar>central=
+antlr4-runtime-4.13.0.pom>alimaven=
+antlr4-runtime-4.13.0.jar>alimaven=

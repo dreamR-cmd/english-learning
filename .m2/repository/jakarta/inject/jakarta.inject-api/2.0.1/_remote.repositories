@@ -1,6 +1,7 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
-jakarta.inject-api-2.0.1.jar>aliyunmaven=
+#Mon Jul 13 14:52:43 CST 2026
+jakarta.inject-api-2.0.1.pom>central=
 jakarta.inject-api-2.0.1.jar>central=
 jakarta.inject-api-2.0.1.pom>aliyunmaven=
-jakarta.inject-api-2.0.1.pom>central=
+jakarta.inject-api-2.0.1.jar>aliyunmaven=
+jakarta.inject-api-2.0.1.pom>alimaven=

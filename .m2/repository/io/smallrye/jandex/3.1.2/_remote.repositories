@@ -1,6 +1,7 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
-jandex-3.1.2.jar>aliyunmaven=
-jandex-3.1.2.jar>central=
-jandex-3.1.2.pom>aliyunmaven=
+#Mon Jul 13 14:52:42 CST 2026
+jandex-3.1.2.pom>alimaven=
 jandex-3.1.2.pom>central=
+jandex-3.1.2.pom>aliyunmaven=
+jandex-3.1.2.jar>central=
+jandex-3.1.2.jar>aliyunmaven=

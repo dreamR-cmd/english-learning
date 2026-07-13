@@ -22,6 +22,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/shop")
 public class ShopController {
+    private static final String USER_ID_HEADER = "X-User-Id";
+
     private final ShopService shopService;
 
     public ShopController(ShopService shopService) {
@@ -37,9 +39,10 @@ public class ShopController {
 
     @Operation(summary = "申请下单幂等性 token", description = "为一次下单意图签发 token，前端创建订单时需要带回该 token。")
     @PostMapping("/order-tokens")
-    public ApiResult<OrderTokenResponse> createOrderToken(@RequestBody CreateOrderTokenRequest request) {
+    public ApiResult<OrderTokenResponse> createOrderToken(@RequestHeader(USER_ID_HEADER) Long userId,
+                                                          @RequestBody CreateOrderTokenRequest request) {
         try {
-            return ApiResult.success(shopService.createOrderToken(request.getUserId(), request.getProductId()));
+            return ApiResult.success(shopService.createOrderToken(userId, request.getProductId()));
         } catch (RuntimeException e) {
             return ApiResult.error(400, e.getMessage());
         }
@@ -47,13 +50,14 @@ public class ShopController {
 
     @Operation(summary = "创建订单", description = "创建待支付订单并扣减库存。requestId 为后端签发的下单幂等性 token。")
     @PostMapping("/orders")
-    public ApiResult<ShopOrder> createOrder(@RequestBody CreateOrderRequest request) {
+    public ApiResult<ShopOrder> createOrder(@RequestHeader(USER_ID_HEADER) Long userId,
+                                            @RequestBody CreateOrderRequest request) {
         try {
             /*
              * 下单接口只创建“待支付”订单。
              * 支付动作单独走 /orders/{orderId}/pay，便于演示订单超时取消流程。
              */
-            return ApiResult.success("订单已创建，请在有效期内支付", shopService.createOrder(request.getUserId(), request.getProductId(), request.getRequestId()));
+            return ApiResult.success("订单已创建，请在有效期内支付", shopService.createOrder(userId, request.getProductId(), request.getRequestId()));
         } catch (RuntimeException e) {
             return ApiResult.error(400, e.getMessage());
         }
@@ -61,10 +65,11 @@ public class ShopController {
 
     @Operation(summary = "秒杀下单入队", description = "将下单请求写入 RabbitMQ 队列，立即返回排队状态，前端再轮询订单结果。")
     @PostMapping("/seckill-orders")
-    public ApiResult<SeckillOrderSubmitResponse> submitSeckillOrder(@RequestBody CreateSeckillOrderRequest request) {
+    public ApiResult<SeckillOrderSubmitResponse> submitSeckillOrder(@RequestHeader(USER_ID_HEADER) Long userId,
+                                                                    @RequestBody CreateSeckillOrderRequest request) {
         try {
             return ApiResult.success("订单已进入排队", shopService.submitSeckillOrder(
-                    request.getUserId(), request.getProductId(), request.getRequestId()));
+                    userId, request.getProductId(), request.getRequestId()));
         } catch (RuntimeException e) {
             return ApiResult.error(400, e.getMessage());
         }
@@ -73,8 +78,7 @@ public class ShopController {
     @Operation(summary = "查询秒杀订单结果", description = "根据用户 ID 和 requestId 查询秒杀订单是否已创建成功。")
     @GetMapping("/orders/result")
     public ApiResult<SeckillOrderResultResponse> getSeckillOrderResult(
-            @Parameter(description = "用户 ID", required = true)
-            @RequestParam Long userId,
+            @RequestHeader(USER_ID_HEADER) Long userId,
             @Parameter(description = "下单 token / requestId", required = true)
             @RequestParam String requestId) {
         try {
@@ -87,8 +91,7 @@ public class ShopController {
     @Operation(summary = "查询用户订单", description = "查询指定用户的订单列表；status=all 查询全部，status=pending 查询待支付，status=paid 查询已支付。")
     @GetMapping("/orders")
     public ApiResult<List<ShopOrder>> getOrders(
-            @Parameter(description = "用户 ID", required = true)
-            @RequestParam Long userId,
+            @RequestHeader(USER_ID_HEADER) Long userId,
             @Parameter(description = "订单状态：all、pending、paid")
             @RequestParam(required = false, defaultValue = "all") String status) {
         try {
@@ -104,10 +107,11 @@ public class ShopController {
     public ApiResult<ShopOrder> payOrder(
             @Parameter(description = "订单 ID", required = true)
             @PathVariable Long orderId,
-            @RequestBody PayOrderRequest request) {
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @RequestBody(required = false) PayOrderRequest request) {
         try {
             // 当前是模拟支付：把 pending 订单改为 paid；真实支付可在这里接第三方支付回调。
-            return ApiResult.success("支付成功", shopService.payOrder(request.getUserId(), orderId));
+            return ApiResult.success("支付成功", shopService.payOrder(userId, orderId));
         } catch (RuntimeException e) {
             return ApiResult.error(400, e.getMessage());
         }

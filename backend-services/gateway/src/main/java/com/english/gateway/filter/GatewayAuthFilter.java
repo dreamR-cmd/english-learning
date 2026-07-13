@@ -4,6 +4,7 @@ import com.english.gateway.auth.GatewayTokenService;
 import com.english.gateway.config.GatewayAuthProperties;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
@@ -22,14 +23,19 @@ import java.nio.charset.StandardCharsets;
 public class GatewayAuthFilter implements GlobalFilter, Ordered {
     public static final String USER_ID_HEADER = "X-User-Id";
     public static final String TOKEN_EXPIRES_AT_HEADER = "X-Token-Expires-At";
+    public static final String INTERNAL_GATEWAY_SECRET_HEADER = "X-Internal-Gateway-Secret";
 
     private final GatewayTokenService tokenService;
     private final GatewayAuthProperties authProperties;
+    private final String internalGatewaySecret;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
-    public GatewayAuthFilter(GatewayTokenService tokenService, GatewayAuthProperties authProperties) {
+    public GatewayAuthFilter(GatewayTokenService tokenService,
+                             GatewayAuthProperties authProperties,
+                             @Value("${gateway.internal.secret:${INTERNAL_GATEWAY_SECRET:english-learning-internal-secret}}") String internalGatewaySecret) {
         this.tokenService = tokenService;
         this.authProperties = authProperties;
+        this.internalGatewaySecret = internalGatewaySecret;
     }
 
     @Override
@@ -38,7 +44,7 @@ public class GatewayAuthFilter implements GlobalFilter, Ordered {
         ServerWebExchange sanitizedExchange = exchange.mutate().request(sanitizedRequest).build();
 
         if (!shouldAuthenticate(sanitizedRequest)) {
-            return chain.filter(sanitizedExchange);
+            return chain.filter(withInternalSecret(sanitizedExchange));
         }
 
         try {
@@ -47,6 +53,7 @@ public class GatewayAuthFilter implements GlobalFilter, Ordered {
             ServerHttpRequest authenticatedRequest = sanitizedRequest.mutate()
                     .header(USER_ID_HEADER, String.valueOf(payload.userId()))
                     .header(TOKEN_EXPIRES_AT_HEADER, String.valueOf(payload.expiresAt()))
+                    .header(INTERNAL_GATEWAY_SECRET_HEADER, internalGatewaySecret)
                     .build();
             return chain.filter(sanitizedExchange.mutate().request(authenticatedRequest).build());
         } catch (RuntimeException error) {
@@ -75,8 +82,16 @@ public class GatewayAuthFilter implements GlobalFilter, Ordered {
                 .headers(headers -> {
                     headers.remove(USER_ID_HEADER);
                     headers.remove(TOKEN_EXPIRES_AT_HEADER);
+                    headers.remove(INTERNAL_GATEWAY_SECRET_HEADER);
                 })
                 .build();
+    }
+
+    private ServerWebExchange withInternalSecret(ServerWebExchange exchange) {
+        ServerHttpRequest request = exchange.getRequest().mutate()
+                .header(INTERNAL_GATEWAY_SECRET_HEADER, internalGatewaySecret)
+                .build();
+        return exchange.mutate().request(request).build();
     }
 
     private String resolveBearerToken(String authorization) {

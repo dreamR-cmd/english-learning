@@ -1,4 +1,5 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:07 CST 2026
-kubernetes-client-bom-5.12.4.pom>aliyunmaven=
+#Mon Jul 13 14:46:25 CST 2026
 kubernetes-client-bom-5.12.4.pom>central=
+kubernetes-client-bom-5.12.4.pom>aliyunmaven=
+kubernetes-client-bom-5.12.4.pom>alimaven=

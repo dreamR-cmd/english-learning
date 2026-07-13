@@ -122,7 +122,6 @@
       const user = JSON.parse(sessionStorage.getItem('currentUser'))
       if (user) {
         submitWrongRecord({
-          userId: user.id,
           questionType: 'LISTENING',
           contentId: currentListening.value.id,
           contentTitle: currentListening.value.title,

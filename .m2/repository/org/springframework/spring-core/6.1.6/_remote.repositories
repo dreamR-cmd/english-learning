@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
-spring-core-6.1.6.jar>aliyunmaven=
+#Mon Jul 13 14:46:27 CST 2026
 spring-core-6.1.6.jar>central=
+spring-core-6.1.6.jar>aliyunmaven=
 spring-core-6.1.6.pom>aliyunmaven=
+spring-core-6.1.6.jar>alimaven=
 spring-core-6.1.6.pom>central=
+spring-core-6.1.6.pom>alimaven=

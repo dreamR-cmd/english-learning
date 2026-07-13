@@ -158,7 +158,6 @@ function completeReading() {
       const user = JSON.parse(sessionStorage.getItem('currentUser'))
       if (user) {
         submitWrongRecord({
-          userId: user.id,
           questionType: 'READING',
           contentId: currentReading.value.id,
           contentTitle: currentReading.value.title,

@@ -147,9 +147,11 @@ ADMIN_DB_URL / ADMIN_DB_USERNAME / ADMIN_DB_PASSWORD
 当前 JPA 使用：
 
 ```yaml
-spring.jpa.hibernate.ddl-auto: update
+spring.jpa.hibernate.ddl-auto: validate
 spring.sql.init.mode: never
 ```
+
+> 数据库表结构现在由 `backend-services/migration-service` 的 Flyway 脚本统一管理。新增字段、索引、表时，请新增 `V{版本号}__说明.sql`，不要依赖 JPA 自动改表。
 
 ### Redis
 
@@ -324,7 +326,7 @@ docker compose down -v
 - 后端服务复用现有环境变量配置：`DB_URL`、`REDIS_HOST`、`RABBITMQ_HOST`、`ADMIN_TOKEN_SECRET` 等。
 - Gateway 在容器网络中会转发到 `auth-service`、`user-service`、`learning-service`、`shop-service`、`admin-service`。
 - 前端容器通过 `VITE_API_TARGET=http://gateway:8081` 将 `/api`、Swagger 路径代理到 Gateway。
-- 当前 JPA 配置为 `ddl-auto: update`，会自动维护表结构；项目当前没有 SQL 初始化脚本，业务种子数据需按现有方式准备。
+- 当前 JPA 默认配置为 `ddl-auto: validate`，表结构由 `backend-services/migration-service` 的 Flyway 脚本维护；基础模块、角色权限、商城商品和精选读物 seed 数据写在版本化 SQL 中。
 
 ## 快速开始：微服务模式（推荐）
 

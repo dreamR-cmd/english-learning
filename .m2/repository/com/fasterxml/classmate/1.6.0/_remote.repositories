@@ -1,6 +1,7 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
+#Mon Jul 13 14:52:42 CST 2026
 classmate-1.6.0.jar>aliyunmaven=
-classmate-1.6.0.jar>central=
 classmate-1.6.0.pom>aliyunmaven=
 classmate-1.6.0.pom>central=
+classmate-1.6.0.pom>alimaven=
+classmate-1.6.0.jar>central=

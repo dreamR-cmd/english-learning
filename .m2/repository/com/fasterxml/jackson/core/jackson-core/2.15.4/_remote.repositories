@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
-jackson-core-2.15.4.jar>aliyunmaven=
-jackson-core-2.15.4.jar>central=
+#Mon Jul 13 14:46:27 CST 2026
 jackson-core-2.15.4.pom>aliyunmaven=
+jackson-core-2.15.4.jar>alimaven=
+jackson-core-2.15.4.jar>aliyunmaven=
+jackson-core-2.15.4.pom>alimaven=
 jackson-core-2.15.4.pom>central=
+jackson-core-2.15.4.jar>central=

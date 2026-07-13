@@ -19,6 +19,8 @@ public class User {
     private Integer dailyWordTarget;
     @Column(name = "role_id")
     private Long roleId;
+    @Column(nullable = false)
+    private Boolean enabled = true;
 
     public User() {}
 
@@ -36,4 +38,6 @@ public class User {
     public void setDailyWordTarget(Integer dailyWordTarget) { this.dailyWordTarget = dailyWordTarget; }
     public Long getRoleId() { return roleId; }
     public void setRoleId(Long roleId) { this.roleId = roleId; }
+    public Boolean getEnabled() { return enabled; }
+    public void setEnabled(Boolean enabled) { this.enabled = enabled; }
 }

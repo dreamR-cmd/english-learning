@@ -189,6 +189,56 @@
         </article>
       </section>
 
+      <section v-if="activeMenu === 'AUDIT_LOGS'" class="panel">
+        <h2>管理员操作日志</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>管理员</th>
+              <th>模块</th>
+              <th>动作</th>
+              <th>对象</th>
+              <th>结果</th>
+              <th>IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="log in operationLogs" :key="log.id">
+              <td>{{ formatDate(log.createdAt) }}</td>
+              <td>{{ log.adminUsername || '-' }}</td>
+              <td>{{ log.module }}</td>
+              <td>{{ log.action }}</td>
+              <td>{{ log.targetId || '-' }}</td>
+              <td>{{ log.success ? '成功' : '失败' }}</td>
+              <td>{{ log.ipAddress || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>权限变更记录</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>管理员</th>
+              <th>角色</th>
+              <th>新增权限</th>
+              <th>移除权限</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="log in permissionChangeLogs" :key="log.id">
+              <td>{{ formatDate(log.createdAt) }}</td>
+              <td>{{ log.adminUsername || '-' }}</td>
+              <td>{{ log.roleCode || log.roleId }}</td>
+              <td>{{ log.addedPermissionIds || '[]' }}</td>
+              <td>{{ log.removedPermissionIds || '[]' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
       <section v-if="activeMenu === 'SWAGGER_DOCS'" class="swagger-panel">
         <iframe title="Swagger 接口文档" src="/swagger-ui.html"></iframe>
       </section>
@@ -280,9 +330,11 @@ import {
   deleteAdminModule,
   deleteAdminRole,
   deleteAdminUser,
+  getAdminOperationLogs,
   getAdminModules,
   getAdminOrders,
   getAdminPermissions,
+  getAdminPermissionChangeLogs,
   getAdminRolePermissions,
   getAdminRoles,
   getAdminUsers,
@@ -302,6 +354,8 @@ const modules = ref([])
 const users = ref([])
 const roles = ref([])
 const permissions = ref([])
+const operationLogs = ref([])
+const permissionChangeLogs = ref([])
 const permissionDialogRole = ref(null)
 const moduleDialogVisible = ref(false)
 const roleDialogVisible = ref(false)
@@ -317,6 +371,7 @@ const menus = [
   { code: 'USER_MANAGE', name: '用户管理' },
   { code: 'ROLE_MANAGE', name: '角色管理' },
   { code: 'PERMISSION_MANAGE', name: '权限管理' },
+  { code: 'AUDIT_LOGS', name: '审计日志' },
   { code: 'SWAGGER_DOCS', name: '接口文档' }
 ]
 
@@ -337,6 +392,10 @@ function showMessage(text) {
 
 function formatDate(value) {
   return value ? String(value).replace('T', ' ').slice(0, 19) : ''
+}
+
+function confirmRisk(text) {
+  return window.confirm(`${text}\n\n确认后将记录管理员审计日志。`) ? 'CONFIRM' : null
 }
 
 async function loadBase() {
@@ -361,10 +420,17 @@ async function loadActive() {
   if (activeMenu.value === 'PERMISSION_MANAGE') {
     permissions.value = (await getAdminPermissions()).data.data || []
   }
+  if (activeMenu.value === 'AUDIT_LOGS') {
+    const [operationRes, changeRes] = await Promise.all([getAdminOperationLogs(), getAdminPermissionChangeLogs()])
+    operationLogs.value = operationRes.data.data || []
+    permissionChangeLogs.value = changeRes.data.data || []
+  }
 }
 
 async function saveOrder(order) {
-  await updateAdminOrderStatus(order.id, order.status)
+  const confirmText = confirmRisk('确认修改订单状态吗？')
+  if (!confirmText) return
+  await updateAdminOrderStatus(order.id, order.status, confirmText)
   showMessage('订单状态已更新')
 }
 
@@ -401,18 +467,24 @@ async function saveModule() {
 }
 
 async function removeModule(id) {
-  await deleteAdminModule(id)
+  const confirmText = confirmRisk('确认删除模块吗？系统内置模块会被后端拦截。')
+  if (!confirmText) return
+  await deleteAdminModule(id, confirmText)
   await loadActive()
   showMessage('模块已删除')
 }
 
 async function saveUserRole(item) {
-  await updateAdminUserRole(item.id, item.roleId)
+  const confirmText = confirmRisk('确认修改用户角色吗？')
+  if (!confirmText) return
+  await updateAdminUserRole(item.id, item.roleId, confirmText)
   showMessage('用户角色已更新')
 }
 
 async function removeUser(id) {
-  await deleteAdminUser(id)
+  const confirmText = confirmRisk('确认禁用该用户吗？')
+  if (!confirmText) return
+  await deleteAdminUser(id, confirmText)
   await loadActive()
   showMessage('用户已删除')
 }
@@ -450,7 +522,9 @@ async function saveRole() {
 }
 
 async function removeRole(id) {
-  await deleteAdminRole(id)
+  const confirmText = confirmRisk('确认删除角色吗？内置角色和已绑定用户的角色会被后端拦截。')
+  if (!confirmText) return
+  await deleteAdminRole(id, confirmText)
   await loadActive()
   showMessage('角色已删除')
 }
@@ -462,7 +536,9 @@ async function openPermissionAssign(role) {
 }
 
 async function saveRolePermissions() {
-  await assignAdminRolePermissions(permissionDialogRole.value.id, selectedPermissionIds.value)
+  const confirmText = confirmRisk('确认修改该角色权限吗？')
+  if (!confirmText) return
+  await assignAdminRolePermissions(permissionDialogRole.value.id, selectedPermissionIds.value, confirmText)
   permissionDialogRole.value = null
   showMessage('角色权限已保存')
 }

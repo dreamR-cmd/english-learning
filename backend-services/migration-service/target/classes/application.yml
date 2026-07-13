@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: migration-service
+  main:
+    web-application-type: none
+
+migration:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+  locations: ${MIGRATION_LOCATIONS:classpath:db/migration}
+  baseline-on-migrate: ${MIGRATION_BASELINE_ON_MIGRATE:true}

@@ -10,7 +10,7 @@ spring:
     password: ${SHOP_DB_PASSWORD:${DB_PASSWORD:123456}}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     show-sql: false
     database-platform: org.hibernate.dialect.MySQLDialect
   sql:

@@ -1,6 +1,7 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
+#Mon Jul 13 14:52:42 CST 2026
 jaxb-runtime-4.0.5.jar>aliyunmaven=
+jaxb-runtime-4.0.5.pom>alimaven=
+jaxb-runtime-4.0.5.pom>central=
 jaxb-runtime-4.0.5.jar>central=
 jaxb-runtime-4.0.5.pom>aliyunmaven=
-jaxb-runtime-4.0.5.pom>central=

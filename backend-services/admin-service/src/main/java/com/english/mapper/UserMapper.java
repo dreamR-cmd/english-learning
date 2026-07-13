@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface UserMapper extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
+    long countByRoleId(Long roleId);
 }

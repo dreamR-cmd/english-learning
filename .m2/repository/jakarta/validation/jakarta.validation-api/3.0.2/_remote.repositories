@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
-jakarta.validation-api-3.0.2.jar>aliyunmaven=
-jakarta.validation-api-3.0.2.jar>central=
-jakarta.validation-api-3.0.2.pom>aliyunmaven=
+#Mon Jul 13 14:52:45 CST 2026
+jakarta.validation-api-3.0.2.jar>alimaven=
+jakarta.validation-api-3.0.2.pom>alimaven=
 jakarta.validation-api-3.0.2.pom>central=
+jakarta.validation-api-3.0.2.pom>aliyunmaven=
+jakarta.validation-api-3.0.2.jar>central=
+jakarta.validation-api-3.0.2.jar>aliyunmaven=

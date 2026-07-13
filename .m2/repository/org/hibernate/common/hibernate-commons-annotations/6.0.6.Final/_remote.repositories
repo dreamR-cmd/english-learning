@@ -1,6 +1,7 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
-hibernate-commons-annotations-6.0.6.Final.jar>aliyunmaven=
+#Mon Jul 13 14:52:42 CST 2026
 hibernate-commons-annotations-6.0.6.Final.jar>central=
-hibernate-commons-annotations-6.0.6.Final.pom>aliyunmaven=
+hibernate-commons-annotations-6.0.6.Final.pom>alimaven=
+hibernate-commons-annotations-6.0.6.Final.jar>aliyunmaven=
 hibernate-commons-annotations-6.0.6.Final.pom>central=
+hibernate-commons-annotations-6.0.6.Final.pom>aliyunmaven=

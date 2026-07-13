@@ -16,27 +16,26 @@
  @RestController
  @RequestMapping("/api/practice")
  public class PracticeController {
+     private static final String USER_ID_HEADER = "X-User-Id";
+
      private final PracticeService practiceService;
 
      public PracticeController(PracticeService practiceService) {
          this.practiceService = practiceService;
      }
 
-     @Operation(summary = "查询模块单词", description = "根据考试模块编码查询单词练习列表；传入用户 ID 时会附带该用户的掌握次数。")
+     @Operation(summary = "查询模块单词", description = "根据考试模块编码查询单词练习列表，并附带当前登录用户的掌握次数。")
      @GetMapping("/words/{moduleCode}")
      public ApiResult<List<WordPracticeItem>> getWords(
              @Parameter(description = "模块编码，例如 cet4、cet6、kaoyan、ielts、toefl、gre", required = true)
              @PathVariable String moduleCode,
-             @Parameter(description = "用户 ID；不传则只返回单词基础信息")
-             @RequestParam(required = false) Long userId) {
+             @RequestHeader(USER_ID_HEADER) Long userId) {
          return ApiResult.success(practiceService.getWordsByModule(moduleCode, userId));
      }
 
      @Operation(summary = "查询每日单词", description = "根据用户每日目标生成或读取当天单词练习列表。")
      @GetMapping("/words/daily")
-     public ApiResult<List<WordPracticeItem>> getDailyWords(
-             @Parameter(description = "用户 ID", required = true)
-             @RequestParam Long userId) {
+     public ApiResult<List<WordPracticeItem>> getDailyWords(@RequestHeader(USER_ID_HEADER) Long userId) {
          return ApiResult.success(practiceService.getDailyWords(userId));
      }
 

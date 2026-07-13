@@ -13,6 +13,7 @@ x-backend-env: &backend-env
   RABBITMQ_USERNAME: guest
   RABBITMQ_PASSWORD: guest
   ADMIN_TOKEN_SECRET: english-learning-admin-secret
+  INTERNAL_GATEWAY_SECRET: english-learning-internal-secret
 
 services:
   mysql:
@@ -68,6 +69,25 @@ services:
     networks:
       - english-learning
 
+  migration-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-17}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-eclipse-temurin:17-jre-alpine}
+        SERVICE_DIR: backend-services/migration-service
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true
+      DB_USERNAME: root
+      DB_PASSWORD: "123456"
+      MIGRATION_BASELINE_ON_MIGRATE: "true"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - english-learning
+
   auth-service:
     build:
       context: .
@@ -79,11 +99,13 @@ services:
     environment:
       <<: *backend-env
       AUTH_SERVICE_PORT: "8087"
-    ports:
-      - "8087:8087"
+    expose:
+      - "8087"
     depends_on:
       mysql:
         condition: service_healthy
+      migration-service:
+        condition: service_completed_successfully
     networks:
       - english-learning
 
@@ -99,9 +121,9 @@ services:
       <<: *backend-env
       USER_SERVICE_PORT: "8088"
       JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
-    ports:
-      - "8088:8088"
-      - "5005:5005"
+    expose:
+      - "8088"
+      - "5005"
     develop:
       watch:
         - action: rebuild          # 检测到变化就重新构建镜像并重启容器
@@ -111,6 +133,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      migration-service:
+        condition: service_completed_successfully
     networks:
       - english-learning
 
@@ -125,11 +149,13 @@ services:
     environment:
       <<: *backend-env
       LEARNING_SERVICE_PORT: "8089"
-    ports:
-      - "8089:8089"
+    expose:
+      - "8089"
     depends_on:
       mysql:
         condition: service_healthy
+      migration-service:
+        condition: service_completed_successfully
     networks:
       - english-learning
 
@@ -145,11 +171,13 @@ services:
       <<: *backend-env
       SHOP_SERVICE_PORT: "8090"
       ORDER_TIMEOUT_MINUTES: "10"
-    ports:
-      - "8090:8090"
+    expose:
+      - "8090"
     depends_on:
       mysql:
         condition: service_healthy
+      migration-service:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       rabbitmq:
@@ -168,11 +196,13 @@ services:
     environment:
       <<: *backend-env
       ADMIN_SERVICE_PORT: "8091"
-    ports:
-      - "8091:8091"
+    expose:
+      - "8091"
     depends_on:
       mysql:
         condition: service_healthy
+      migration-service:
+        condition: service_completed_successfully
     networks:
       - english-learning
 
@@ -196,6 +226,7 @@ services:
       REDIS_PASSWORD: ""
       REDIS_DATABASE: "0"
       ADMIN_TOKEN_SECRET: english-learning-admin-secret
+      INTERNAL_GATEWAY_SECRET: english-learning-internal-secret
     ports:
       - "8081:8081"
     depends_on:

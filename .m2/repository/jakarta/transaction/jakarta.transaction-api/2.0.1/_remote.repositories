@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
-jakarta.transaction-api-2.0.1.jar>aliyunmaven=
+#Mon Jul 13 14:52:45 CST 2026
 jakarta.transaction-api-2.0.1.jar>central=
 jakarta.transaction-api-2.0.1.pom>aliyunmaven=
+jakarta.transaction-api-2.0.1.jar>aliyunmaven=
+jakarta.transaction-api-2.0.1.pom>alimaven=
 jakarta.transaction-api-2.0.1.pom>central=
+jakarta.transaction-api-2.0.1.jar>alimaven=

@@ -1,6 +1,7 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
-angus-activation-2.0.2.jar>aliyunmaven=
-angus-activation-2.0.2.jar>central=
+#Mon Jul 13 14:52:43 CST 2026
 angus-activation-2.0.2.pom>aliyunmaven=
+angus-activation-2.0.2.jar>central=
 angus-activation-2.0.2.pom>central=
+angus-activation-2.0.2.pom>alimaven=
+angus-activation-2.0.2.jar>aliyunmaven=

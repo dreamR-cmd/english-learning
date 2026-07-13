@@ -57,11 +57,11 @@ export function getWordsByModule(moduleCode) {
 }
 
 export function getWordsByModuleForUser(moduleCode, userId) {
-  return api.get(`/practice/words/${moduleCode}`, { params: { userId } })
+  return api.get(`/practice/words/${moduleCode}`)
 }
 
 export function getDailyWords(userId) {
-  return api.get('/practice/words/daily', { params: { userId } })
+  return api.get('/practice/words/daily')
 }
 
 export function getReadingsByModule(moduleCode) {
@@ -73,7 +73,7 @@ export function getListeningsByModule(moduleCode) {
 }
 
 export function updateProfile(userId, nickname, dailyWordTarget) {
-  return api.put('/user/profile', { userId, nickname, dailyWordTarget })
+  return api.put('/user/profile', { nickname, dailyWordTarget })
 }
 
 export function submitWrongRecord(data) {
@@ -81,39 +81,39 @@ export function submitWrongRecord(data) {
 }
 
 export function getWrongRecords(userId) {
-  return api.get('/user/wrong-records', { params: { userId } })
+  return api.get('/user/wrong-records')
 }
 
 export function removeWrongRecord(userId, wrongRecordId) {
-  return api.delete(`/user/wrong-records/${wrongRecordId}`, { params: { userId } })
+  return api.delete(`/user/wrong-records/${wrongRecordId}`)
 }
 
 export function addFavorite(userId, readingId) {
-  return api.post('/user/favorites', { userId, readingId })
+  return api.post('/user/favorites', { readingId })
 }
 
 export function removeFavorite(userId, readingId) {
-  return api.delete(`/user/favorites/${readingId}`, { params: { userId } })
+  return api.delete(`/user/favorites/${readingId}`)
 }
 
 export function getFavorites(userId) {
-  return api.get('/user/favorites', { params: { userId } })
+  return api.get('/user/favorites')
 }
 
 export function checkFavorite(userId, readingId) {
-  return api.get('/user/favorites/check', { params: { userId, readingId } })
+  return api.get('/user/favorites/check', { params: { readingId } })
 }
 
 export function markWordKnown(userId, wordId) {
-  return api.post('/user/word-progress/known', { userId, wordId })
+  return api.post('/user/word-progress/known', { wordId })
 }
 
 export function resetWordProgress(userId, wordId) {
-  return api.post('/user/word-progress/reset', { userId, wordId })
+  return api.post('/user/word-progress/reset', { wordId })
 }
 
 export function getReviewWords(userId) {
-  return api.get('/user/word-progress/review', { params: { userId } })
+  return api.get('/user/word-progress/review')
 }
 
 export function getShopProducts() {
@@ -121,47 +121,47 @@ export function getShopProducts() {
 }
 
 export function createShopOrderToken(userId, productId) {
-  return api.post('/shop/order-tokens', { userId, productId })
+  return api.post('/shop/order-tokens', { productId })
 }
 
 export function createShopOrder(userId, productId, requestId) {
-  return api.post('/shop/orders', { userId, productId, requestId })
+  return api.post('/shop/orders', { productId, requestId })
 }
 
 export function createSeckillShopOrder(userId, productId, requestId) {
-  return api.post('/shop/seckill-orders', { userId, productId, requestId })
+  return api.post('/shop/seckill-orders', { productId, requestId })
 }
 
 export function getSeckillShopOrderResult(userId, requestId) {
-  return api.get('/shop/orders/result', { params: { userId, requestId } })
+  return api.get('/shop/orders/result', { params: { requestId } })
 }
 
 export function getShopOrders(userId, status = 'all') {
-  return api.get('/shop/orders', { params: { userId, status } })
+  return api.get('/shop/orders', { params: { status } })
 }
 
 export function payShopOrder(userId, orderId) {
-  return api.post(`/shop/orders/${orderId}/pay`, { userId })
+  return api.post(`/shop/orders/${orderId}/pay`, {})
 }
 
 export function getSelectedReadings(userId) {
-  return api.get('/selected-readings', { params: userId ? { userId } : {} })
+  return api.get('/selected-readings')
 }
 
 export function addSelectedReadingFavorite(userId, selectedReadingId) {
-  return api.post('/selected-readings/favorites', { userId, selectedReadingId })
+  return api.post('/selected-readings/favorites', { selectedReadingId })
 }
 
 export function removeSelectedReadingFavorite(userId, selectedReadingId) {
-  return api.delete(`/selected-readings/favorites/${selectedReadingId}`, { params: { userId } })
+  return api.delete(`/selected-readings/favorites/${selectedReadingId}`)
 }
 
 export function getAdminOrders() {
   return api.get('/admin/orders')
 }
 
-export function updateAdminOrderStatus(orderId, status) {
-  return api.put(`/admin/orders/${orderId}/status`, { status })
+export function updateAdminOrderStatus(orderId, status, confirmText) {
+  return api.put(`/admin/orders/${orderId}/status`, { status, confirmText })
 }
 
 export function getAdminModules() {
@@ -176,20 +176,20 @@ export function updateAdminModule(moduleId, data) {
   return api.put(`/admin/modules/${moduleId}`, data)
 }
 
-export function deleteAdminModule(moduleId) {
-  return api.delete(`/admin/modules/${moduleId}`)
+export function deleteAdminModule(moduleId, confirmText) {
+  return api.delete(`/admin/modules/${moduleId}`, { data: { confirmText } })
 }
 
 export function getAdminUsers() {
   return api.get('/admin/users')
 }
 
-export function updateAdminUserRole(userId, roleId) {
-  return api.put(`/admin/users/${userId}/role`, { roleId })
+export function updateAdminUserRole(userId, roleId, confirmText) {
+  return api.put(`/admin/users/${userId}/role`, { roleId, confirmText })
 }
 
-export function deleteAdminUser(userId) {
-  return api.delete(`/admin/users/${userId}`)
+export function deleteAdminUser(userId, confirmText) {
+  return api.delete(`/admin/users/${userId}`, { data: { confirmText } })
 }
 
 export function getAdminRoles() {
@@ -204,8 +204,8 @@ export function updateAdminRole(roleId, data) {
   return api.put(`/admin/roles/${roleId}`, data)
 }
 
-export function deleteAdminRole(roleId) {
-  return api.delete(`/admin/roles/${roleId}`)
+export function deleteAdminRole(roleId, confirmText) {
+  return api.delete(`/admin/roles/${roleId}`, { data: { confirmText } })
 }
 
 export function getAdminPermissions() {
@@ -216,8 +216,16 @@ export function getAdminRolePermissions(roleId) {
   return api.get(`/admin/roles/${roleId}/permissions`)
 }
 
-export function assignAdminRolePermissions(roleId, permissionIds) {
-  return api.put(`/admin/roles/${roleId}/permissions`, { permissionIds })
+export function assignAdminRolePermissions(roleId, permissionIds, confirmText) {
+  return api.put(`/admin/roles/${roleId}/permissions`, { permissionIds, confirmText })
+}
+
+export function getAdminOperationLogs() {
+  return api.get('/admin/audit/operations')
+}
+
+export function getAdminPermissionChangeLogs() {
+  return api.get('/admin/audit/permission-changes')
 }
 
 export default api

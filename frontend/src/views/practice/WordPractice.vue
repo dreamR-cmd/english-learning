@@ -190,7 +190,6 @@ async function markAsUnknown() {
 
   try {
     await submitWrongRecord({
-      userId: user.value.id,
       questionType: 'WORD',
       contentId: currentWord.value.id,
       contentTitle: currentWord.value.word,

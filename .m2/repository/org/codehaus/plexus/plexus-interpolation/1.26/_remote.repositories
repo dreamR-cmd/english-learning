@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:17 CST 2026
-plexus-interpolation-1.26.jar>aliyunmaven=
+#Mon Jul 13 14:46:28 CST 2026
 plexus-interpolation-1.26.jar>central=
 plexus-interpolation-1.26.pom>aliyunmaven=
 plexus-interpolation-1.26.pom>central=
+plexus-interpolation-1.26.jar>aliyunmaven=
+plexus-interpolation-1.26.pom>alimaven=
+plexus-interpolation-1.26.jar>alimaven=

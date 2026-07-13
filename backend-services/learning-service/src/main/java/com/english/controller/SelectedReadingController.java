@@ -16,25 +16,25 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/selected-readings")
 public class SelectedReadingController {
+    private static final String USER_ID_HEADER = "X-User-Id";
+
     private final SelectedReadingService selectedReadingService;
 
     public SelectedReadingController(SelectedReadingService selectedReadingService) {
         this.selectedReadingService = selectedReadingService;
     }
 
-    @Operation(summary = "查询精选读物", description = "返回精选读物列表；传入用户 ID 时会标记每篇读物是否已收藏。")
+    @Operation(summary = "查询精选读物", description = "返回精选读物列表，并标记当前登录用户是否已收藏。")
     @GetMapping
-    public ApiResult<List<SelectedReadingItem>> getSelectedReadings(
-            @Parameter(description = "用户 ID；不传则不返回收藏状态")
-            @RequestParam(required = false) Long userId) {
+    public ApiResult<List<SelectedReadingItem>> getSelectedReadings(@RequestHeader(USER_ID_HEADER) Long userId) {
         return ApiResult.success(selectedReadingService.getSelectedReadings(userId));
     }
 
-    @Operation(summary = "收藏精选读物", description = "收藏一篇精选读物。请求体字段：userId 用户 ID，selectedReadingId 精选读物 ID。")
+    @Operation(summary = "收藏精选读物", description = "收藏一篇精选读物。用户身份来自 Gateway 注入的 X-User-Id。")
     @PostMapping("/favorites")
-    public ApiResult<UserSelectedReadingFavorite> addFavorite(@RequestBody Map<String, Object> body) {
+    public ApiResult<UserSelectedReadingFavorite> addFavorite(@RequestHeader(USER_ID_HEADER) Long userId,
+                                                             @RequestBody Map<String, Object> body) {
         try {
-            Long userId = Long.valueOf(body.get("userId").toString());
             Long selectedReadingId = Long.valueOf(body.get("selectedReadingId").toString());
             UserSelectedReadingFavorite favorite = selectedReadingService.addFavorite(userId, selectedReadingId);
             return ApiResult.success(favorite == null ? "已收藏" : "收藏成功", favorite);
@@ -48,8 +48,7 @@ public class SelectedReadingController {
     public ApiResult<Void> removeFavorite(
             @Parameter(description = "精选读物 ID", required = true)
             @PathVariable Long selectedReadingId,
-            @Parameter(description = "用户 ID", required = true)
-            @RequestParam Long userId) {
+            @RequestHeader(USER_ID_HEADER) Long userId) {
         try {
             selectedReadingService.removeFavorite(userId, selectedReadingId);
             return ApiResult.success("已取消收藏", null);
@@ -60,9 +59,7 @@ public class SelectedReadingController {
 
     @Operation(summary = "查询精选读物收藏", description = "查询指定用户收藏的精选读物记录。")
     @GetMapping("/favorites")
-    public ApiResult<List<UserSelectedReadingFavorite>> getFavorites(
-            @Parameter(description = "用户 ID", required = true)
-            @RequestParam Long userId) {
+    public ApiResult<List<UserSelectedReadingFavorite>> getFavorites(@RequestHeader(USER_ID_HEADER) Long userId) {
         return ApiResult.success(selectedReadingService.getFavorites(userId));
     }
 }

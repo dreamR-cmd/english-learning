@@ -1,6 +1,7 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
+#Mon Jul 13 14:46:27 CST 2026
+mysql-connector-j-8.3.0.pom>alimaven=
 mysql-connector-j-8.3.0.jar>aliyunmaven=
-mysql-connector-j-8.3.0.jar>central=
-mysql-connector-j-8.3.0.pom>aliyunmaven=
 mysql-connector-j-8.3.0.pom>central=
+mysql-connector-j-8.3.0.pom>aliyunmaven=
+mysql-connector-j-8.3.0.jar>central=
