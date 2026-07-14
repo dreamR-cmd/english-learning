@@ -1,4 +1,5 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:03 CST 2026
-shrinkwrap-bom-1.2.6.pom>aliyunmaven=
+#Tue Jul 14 14:27:02 CST 2026
 shrinkwrap-bom-1.2.6.pom>central=
+shrinkwrap-bom-1.2.6.pom>alimaven=
+shrinkwrap-bom-1.2.6.pom>aliyunmaven=

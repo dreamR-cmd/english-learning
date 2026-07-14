@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
+#Tue Jul 14 14:27:11 CST 2026
 netty-resolver-4.1.109.Final.jar>aliyunmaven=
 netty-resolver-4.1.109.Final.jar>central=
 netty-resolver-4.1.109.Final.pom>aliyunmaven=
+netty-resolver-4.1.109.Final.pom>alimaven=
+netty-resolver-4.1.109.Final.jar>alimaven=
 netty-resolver-4.1.109.Final.pom>central=

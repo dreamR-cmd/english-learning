@@ -12,7 +12,19 @@
         <option value="$PROJECT_DIR$/backend-services/shop-service/pom.xml" />
         <option value="$PROJECT_DIR$/backend-services/user-service/pom.xml" />
         <option value="$PROJECT_DIR$/backend-services/learning-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend-services/admin-service/pom.xml" />
+        <option value="$PROJECT_DIR$/rag-services/pom.xml" />
+        <option value="$PROJECT_DIR$/backend-services/rag-service/pom.xml" />
+        <option value="$PROJECT_DIR$/rag-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend-services/migration-service/pom.xml" />
       </list>
+    </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/backend-services/rag-service/pom.xml" />
+        <option value="$PROJECT_DIR$/rag-service/pom.xml" />
+        <option value="$PROJECT_DIR$/rag-services/pom.xml" />
+      </set>
     </option>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="17" project-jdk-type="JavaSDK">

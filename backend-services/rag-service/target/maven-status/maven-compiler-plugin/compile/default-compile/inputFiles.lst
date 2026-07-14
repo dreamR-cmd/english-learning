@@ -1,0 +1,11 @@
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\dto\RagDocumentResponse.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\dto\ApiResult.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\dto\RagDocumentRequest.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\dto\RagAnswerResponse.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\service\impl\InMemoryRagService.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\config\InternalGatewayFilter.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\dto\RagSearchItem.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\controller\RagController.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\RagServiceApplication.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\service\RagService.java
+F:\idea_project\english_learning\english-learning\backend-services\rag-service\src\main\java\com\english\dto\RagQueryRequest.java

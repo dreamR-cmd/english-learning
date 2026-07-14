@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
+    <excludeFromCompile>
+      <directory url="file://$PROJECT_DIR$/rag-services/src/main/resources/archetype-resources" includeSubdirectories="true" />
+    </excludeFromCompile>
     <annotationProcessing>
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -13,19 +16,27 @@
         <module name="shop-service" />
         <module name="learning-service" />
         <module name="user-service" />
+        <module name="migration-service" />
         <module name="commons-io" />
+        <module name="admin-service" />
+        <module name="rag-services" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="maven-archiver" target="1.5" />
+      <module name="rag-service" target="17" />
+      <module name="rag-services" target="1.5" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="admin-service" options="-parameters" />
       <module name="auth-service" options="-parameters" />
       <module name="english-learning" options="-parameters" />
       <module name="english-learning-gateway" options="-parameters" />
       <module name="learning-service" options="-parameters" />
+      <module name="migration-service" options="-parameters" />
+      <module name="rag-service" options="-parameters" />
       <module name="shop-service" options="-parameters" />
       <module name="user-service" options="-parameters" />
     </option>

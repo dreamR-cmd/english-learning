@@ -13,6 +13,7 @@ $Services = @(
     @{ Name = 'learning-service'; Path = 'backend-services/learning-service'; Command = 'mvn spring-boot:run' },
     @{ Name = 'shop-service';     Path = 'backend-services/shop-service';     Command = 'mvn spring-boot:run' },
     @{ Name = 'admin-service';    Path = 'backend-services/admin-service';    Command = 'mvn spring-boot:run' },
+    @{ Name = 'rag-service';      Path = 'backend-services/rag-service';      Command = 'mvn spring-boot:run' },
     @{ Name = 'gateway';          Path = 'backend-services/gateway';          Command = 'mvn spring-boot:run' },
     @{ Name = 'frontend';         Path = 'frontend';                          Command = 'npm run dev' }
 )

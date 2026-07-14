@@ -1,0 +1,12 @@
+com\english\dto\RagDocumentResponse.class
+com\english\dto\RagQueryRequest.class
+com\english\service\impl\InMemoryRagService$DocumentEntry.class
+com\english\service\RagService.class
+com\english\dto\RagAnswerResponse.class
+com\english\config\InternalGatewayFilter.class
+com\english\service\impl\InMemoryRagService.class
+com\english\dto\RagSearchItem.class
+com\english\dto\RagDocumentRequest.class
+com\english\controller\RagController.class
+com\english\dto\ApiResult.class
+com\english\RagServiceApplication.class

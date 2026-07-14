@@ -48,6 +48,10 @@ spring:
           uri: ${LEARNING_SERVICE_URI:http://localhost:8089}
           predicates:
             - Path=/api/modules/**,/api/practice/**,/api/selected-readings/**
+        - id: rag-service
+          uri: ${RAG_SERVICE_URI:http://localhost:8092}
+          predicates:
+            - Path=/api/rag/**
         - id: shop-order-service
           uri: ${SHOP_SERVICE_URI:http://localhost:8090}
           predicates:
@@ -98,6 +102,12 @@ spring:
           uri: ${SHOP_SERVICE_URI:http://localhost:8090}
           predicates:
             - Path=/v3/api-docs/shop
+          filters:
+            - SetPath=/v3/api-docs
+        - id: rag-service-openapi
+          uri: ${RAG_SERVICE_URI:http://localhost:8092}
+          predicates:
+            - Path=/v3/api-docs/rag
           filters:
             - SetPath=/v3/api-docs
         - id: english-learning-swagger

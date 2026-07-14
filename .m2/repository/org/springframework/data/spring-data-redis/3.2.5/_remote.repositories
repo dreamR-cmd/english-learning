@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jul 07 17:13:13 CST 2026
-spring-data-redis-3.2.5.jar>aliyunmaven=
-spring-data-redis-3.2.5.jar>central=
-spring-data-redis-3.2.5.pom>aliyunmaven=
+#Tue Jul 14 14:27:11 CST 2026
 spring-data-redis-3.2.5.pom>central=
+spring-data-redis-3.2.5.jar>central=
+spring-data-redis-3.2.5.pom>alimaven=
+spring-data-redis-3.2.5.pom>aliyunmaven=
+spring-data-redis-3.2.5.jar>alimaven=
+spring-data-redis-3.2.5.jar>aliyunmaven=

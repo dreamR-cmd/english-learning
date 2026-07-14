@@ -7,11 +7,19 @@
     <file url="file://$PROJECT_DIR$/.m2/repository/commons-io/commons-io/2.6" charset="ISO-8859-1" />
     <file url="file://$PROJECT_DIR$/.m2/repository/commons-io/commons-io/2.6/src/main/java" charset="ISO-8859-1" />
     <file url="file://$PROJECT_DIR$/.m2/repository/commons-io/commons-io/2.6/src/main/resources" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/backend-services/admin-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/backend-services/auth-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/backend-services/backend/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/backend-services/gateway/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/backend-services/learning-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/backend-services/migration-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/backend-services/rag-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/backend-services/rag-service/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/backend-services/shop-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/backend-services/user-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/rag-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/rag-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/rag-services/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/rag-services/src/main/resources" charset="UTF-8" />
   </component>
 </project>
