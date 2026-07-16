@@ -12,6 +12,8 @@ spring:
       database: ${REDIS_DATABASE:0}
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Allow-Headers Access-Control-Allow-Methods, RETAIN_FIRST
       globalcors:
         cors-configurations:
           '[/**]':

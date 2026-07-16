@@ -4,12 +4,56 @@ server:
 spring:
   application:
     name: rag-service
+  servlet:
+    multipart:
+      max-file-size: ${RAG_UPLOAD_MAX_FILE_SIZE:20MB}
+      max-request-size: ${RAG_UPLOAD_MAX_REQUEST_SIZE:25MB}
+  datasource:
+    url: ${RAG_DB_URL:${DB_URL:jdbc:mysql://localhost:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true}}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${RAG_DB_USERNAME:${DB_USERNAME:root}}
+    password: ${RAG_DB_PASSWORD:${DB_PASSWORD:123456}}
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    show-sql: false
+    database-platform: org.hibernate.dialect.MySQLDialect
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+  sql:
+    init:
+      mode: never
 
 rag:
   max-results: ${RAG_MAX_RESULTS:5}
+  document:
+    max-upload-bytes: ${RAG_DOCUMENT_MAX_UPLOAD_BYTES:20971520}
+  chunk:
+    max-chars: ${RAG_CHUNK_MAX_CHARS:800}
+    overlap-chars: ${RAG_CHUNK_OVERLAP_CHARS:120}
+  vector:
+    index-name: ${RAG_VECTOR_INDEX:rag_chunks_idx}
+    key-prefix: ${RAG_VECTOR_KEY_PREFIX:rag:chunk:}
+    dimension: ${RAG_EMBEDDING_DIMENSION:1536}
+  embedding:
+    api-key: ${OPENAI_API_KEY:sk-fb839071a7ebe9320af714f68ba73ecb9e63c2823fe37541e1658d79440fc9fe}
+    base-url: ${OPENAI_BASE_URL:https://reecewong520--sub2api.modal.run/v1}
+    model-name: ${RAG_EMBEDDING_MODEL:text-embedding-3-small}
+    timeout-seconds: ${RAG_EMBEDDING_TIMEOUT_SECONDS:30}
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+
+langchain4j:
+  open-ai:
+    chat-model:
+      api-key: ${OPENAI_API_KEY:}
+      model-name: ${RAG_MODEL:gpt-4o-mini}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}

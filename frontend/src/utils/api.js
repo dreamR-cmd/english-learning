@@ -1,9 +1,10 @@
 import axios from 'axios'
 import { clearCurrentUser, isCurrentUserExpired, readStoredCurrentUser } from './currentUser'
 
+const API_BASE_URL = resolveApiBaseUrl()
+
 const api = axios.create({
-  baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' }
+  baseURL: API_BASE_URL
 })
 
 api.interceptors.request.use(config => {
@@ -226,6 +227,150 @@ export function getAdminOperationLogs() {
 
 export function getAdminPermissionChangeLogs() {
   return api.get('/admin/audit/permission-changes')
+}
+
+export function getRagDocuments() {
+  return api.get('/rag/documents')
+}
+
+export function createRagDocument(data) {
+  return api.post('/rag/documents', data)
+}
+
+export function uploadRagDocument(formData) {
+  return api.post('/rag/documents/upload', formData)
+}
+
+export function searchRagDocuments(question, topK = 5) {
+  return api.post('/rag/search', { question, topK })
+}
+
+export function askRagQuestion(question, topK = 5) {
+  return api.post('/rag/ask', { question, topK })
+}
+
+export async function streamRagQuestion(question, topK = 5, handlers = {}) {
+  if (isCurrentUserExpired()) {
+    clearCurrentUser()
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
+    throw new Error('登录已过期')
+  }
+
+  const headers = {
+    Accept: 'text/event-stream',
+    'Content-Type': 'application/json'
+  }
+  const user = readStoredCurrentUser()
+  if (user?.token) {
+    headers.Authorization = `Bearer ${user.token}`
+  }
+
+  const response = await fetch(apiUrl('/rag/ask/stream'), {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ question, topK })
+  })
+
+  if (!response.ok) {
+    throw new Error(await readStreamError(response))
+  }
+  if (!response.body) {
+    throw new Error('浏览器不支持流式响应')
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let streamError = ''
+
+  while (true) {
+    const { value, done } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const events = buffer.split(/\r?\n\r?\n/)
+    buffer = events.pop() || ''
+    events.forEach(rawEvent => {
+      const parsed = parseSseEvent(rawEvent)
+      streamError = handleRagStreamEvent(parsed, handlers) || streamError
+    })
+  }
+
+  buffer += decoder.decode()
+  if (buffer.trim()) {
+    const parsed = parseSseEvent(buffer)
+    streamError = handleRagStreamEvent(parsed, handlers) || streamError
+  }
+
+  if (streamError) {
+    throw new Error(streamError)
+  }
+  handlers.onDone?.()
+}
+
+async function readStreamError(response) {
+  const text = await response.text()
+  try {
+    const data = JSON.parse(text)
+    return data.message || text || 'RAG 流式问答失败'
+  } catch {
+    return text || 'RAG 流式问答失败'
+  }
+}
+
+function parseSseEvent(rawEvent) {
+  const parsed = { event: 'message', data: '' }
+  const dataLines = []
+  rawEvent.split(/\r?\n/).forEach(line => {
+    if (line.startsWith('event:')) {
+      parsed.event = line.slice(6).trim()
+    } else if (line.startsWith('data:')) {
+      dataLines.push(line.slice(5).replace(/^ /, ''))
+    }
+  })
+  parsed.data = dataLines.join('\n')
+  return parsed
+}
+
+function handleRagStreamEvent(parsed, handlers) {
+  if (!parsed.data && parsed.event !== 'done') return ''
+
+  if (parsed.event === 'references') {
+    handlers.onReferences?.(JSON.parse(parsed.data || '[]'))
+    return ''
+  }
+  if (parsed.event === 'token') {
+    handlers.onToken?.(parsed.data)
+    return ''
+  }
+  if (parsed.event === 'error') {
+    try {
+      return JSON.parse(parsed.data).message || 'RAG 流式问答失败'
+    } catch {
+      return parsed.data || 'RAG 流式问答失败'
+    }
+  }
+  return ''
+}
+
+function resolveApiBaseUrl() {
+  const configured = import.meta.env.VITE_API_BASE_URL
+  if (configured) {
+    return configured.replace(/\/$/, '')
+  }
+
+  if (import.meta.env.DEV && typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}:8081/api`
+  }
+
+  return '/api'
+}
+
+function apiUrl(path) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${API_BASE_URL}${normalizedPath}`
 }
 
 export default api

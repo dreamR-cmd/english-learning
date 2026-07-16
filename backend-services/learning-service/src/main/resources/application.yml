@@ -34,4 +34,6 @@ springdoc:
         url: /v3/api-docs/learning
       - name: 商城服务
         url: /v3/api-docs/shop
+      - name: RAG 服务
+        url: /v3/api-docs/rag
     urls-primary-name: 学习服务

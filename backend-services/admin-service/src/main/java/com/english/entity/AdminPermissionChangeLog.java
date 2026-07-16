@@ -22,12 +22,16 @@ public class AdminPermissionChangeLog {
     private Long roleId;
     private String roleCode;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String beforePermissionIds;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String afterPermissionIds;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String addedPermissionIds;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String removedPermissionIds;
     private LocalDateTime createdAt;
 

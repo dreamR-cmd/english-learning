@@ -30,8 +30,10 @@ public class AdminOperationLog {
     @Column(length = 1000)
     private String errorMessage;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String requestBody;
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String responseBody;
     private LocalDateTime createdAt;
 

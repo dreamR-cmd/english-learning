@@ -1,6 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
+        
         {
             "type": "java",
             "name": "EnglishLearningApplication",
@@ -56,6 +57,14 @@
             "hostName": "localhost",
             "port": 5005,
             "projectName": "user-service"
+        },
+                {
+            "type": "java",
+            "name": "Docker Remote Debug - RagService",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5006,
+            "projectName": "rag-service"
         }
     ]
 }

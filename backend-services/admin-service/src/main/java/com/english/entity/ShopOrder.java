@@ -28,6 +28,8 @@ public class ShopOrder {
 
     @Column(name = "order_no", nullable = false, unique = true)
     private String orderNo;
+    @Column(name = "request_id", length = 64)
+    private String requestId;
     @Column(name = "user_id", nullable = false)
     private Long userId;
     @Column(name = "product_id", nullable = false)
@@ -58,6 +60,8 @@ public class ShopOrder {
     public void setId(Long id) { this.id = id; }
     public String getOrderNo() { return orderNo; }
     public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
+    public String getRequestId() { return requestId; }
+    public void setRequestId(String requestId) { this.requestId = requestId; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
     public Long getProductId() { return productId; }

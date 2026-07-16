@@ -239,6 +239,8 @@
         </table>
       </section>
 
+      <RagAdminPanel v-if="activeMenu === 'RAG_MANAGE'" :refresh-key="ragRefreshKey" />
+
       <section v-if="activeMenu === 'SWAGGER_DOCS'" class="swagger-panel">
         <iframe title="Swagger 接口文档" src="/swagger-ui.html"></iframe>
       </section>
@@ -323,6 +325,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import RagAdminPanel from './RagAdminPanel.vue'
 import {
   assignAdminRolePermissions,
   createAdminModule,
@@ -360,6 +363,7 @@ const permissionDialogRole = ref(null)
 const moduleDialogVisible = ref(false)
 const roleDialogVisible = ref(false)
 const selectedPermissionIds = ref([])
+const ragRefreshKey = ref(0)
 
 const moduleForm = reactive({ id: null, name: '', code: '', icon: '', routePath: '', description: '', sortOrder: 0 })
 const roleForm = reactive({ id: null, name: '', code: '', description: '' })
@@ -372,12 +376,13 @@ const menus = [
   { code: 'ROLE_MANAGE', name: '角色管理' },
   { code: 'PERMISSION_MANAGE', name: '权限管理' },
   { code: 'AUDIT_LOGS', name: '审计日志' },
+  { code: 'RAG_MANAGE', name: 'RAG 知识库' },
   { code: 'SWAGGER_DOCS', name: '接口文档' }
 ]
 
 const visibleMenus = computed(() => {
   const owned = new Set(user.value?.permissions || [])
-  return menus.filter(item => owned.has(item.code))
+  return menus.filter(item => owned.has(item.code) || (item.code === 'RAG_MANAGE' && user.value?.roleCode === 'ADMIN'))
 })
 const currentMenu = computed(() => menus.find(item => item.code === activeMenu.value))
 
@@ -424,6 +429,9 @@ async function loadActive() {
     const [operationRes, changeRes] = await Promise.all([getAdminOperationLogs(), getAdminPermissionChangeLogs()])
     operationLogs.value = operationRes.data.data || []
     permissionChangeLogs.value = changeRes.data.data || []
+  }
+  if (activeMenu.value === 'RAG_MANAGE') {
+    ragRefreshKey.value += 1
   }
 }
 

@@ -1,10 +1,23 @@
- <template>
-   <div id="english-app">
-     <router-view />
-   </div>
- </template>
+<template>
+  <div id="english-app">
+    <router-view />
+    <FloatingRagChat :visible="showFloatingRag" />
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import FloatingRagChat from './components/FloatingRagChat.vue'
+
+const route = useRoute()
+
+const showFloatingRag = computed(() => {
+  return route.name !== 'Login' && !route.meta?.admin
+})
+</script>
  
- <style>
+<style>
  * {
    margin: 0;
    padding: 0;
