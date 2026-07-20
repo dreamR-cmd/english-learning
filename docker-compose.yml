@@ -218,6 +218,8 @@ services:
       <<: *backend-env
       RAG_SERVICE_PORT: "8092"
       RAG_MAX_RESULTS: "5"
+      RAG_USER_SERVICE_URL: http://user-service:8088
+      RAG_LEARNING_SERVICE_URL: http://learning-service:8089
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       RAG_EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL:-text-embedding-3-small}

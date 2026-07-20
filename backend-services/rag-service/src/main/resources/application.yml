@@ -30,6 +30,15 @@ spring:
 
 rag:
   max-results: ${RAG_MAX_RESULTS:5}
+  chat:
+    api-key: ${RAG_CHAT_API_KEY:sk-312e8115d128601865a1cb57dbae20a41762d5484ef14f3d18dc048931a42f04}
+    model-name: ${RAG_CHAT_MODEL:gpt-5.5}
+    base-url: ${RAG_CHAT_BASE_URL:https://sub2api.sxlx.tech/v1}
+  agent:
+    enabled: ${RAG_AGENT_ENABLED:true}
+    user-service-url: ${RAG_USER_SERVICE_URL:http://localhost:8088}
+    learning-service-url: ${RAG_LEARNING_SERVICE_URL:http://localhost:8089}
+    max-tool-output-chars: ${RAG_AGENT_MAX_TOOL_OUTPUT_CHARS:5000}
   document:
     max-upload-bytes: ${RAG_DOCUMENT_MAX_UPLOAD_BYTES:20971520}
   chunk:

@@ -13,19 +13,21 @@ import com.english.service.RagEmbeddingService;
 import com.english.service.RagService;
 import com.english.service.RagVectorRecord;
 import com.english.service.RagVectorStore;
+import com.english.service.impl.agent.RagAgentService;
+import com.english.service.impl.agent.RagChatModelFactory;
+import com.english.service.impl.tools.KnowledgeBaseToolResult;
 
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.MemoryId;
-import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ import java.util.regex.Pattern;
 
 @Service
 public class InMemoryRagService implements RagService {
+    private static final Logger log = LoggerFactory.getLogger(InMemoryRagService.class);
     private static final Charset WINDOWS_1252 = Charset.forName("windows-1252");
     private static final Pattern QUERY_TERM_PATTERN = Pattern.compile("[a-zA-Z0-9]+|[\\u4e00-\\u9fff]+");
     private static final Pattern EXPLICIT_ENGLISH_TERM_PATTERN = Pattern.compile("[a-zA-Z]{2,}");
@@ -54,9 +57,10 @@ public class InMemoryRagService implements RagService {
     private final RagEmbeddingService embeddingService;
     private final RagVectorStore vectorStore;
     private final RagDocumentFileParser fileParser;
+    private final RagAgentService ragAgentService;
+    private final RagChatModelFactory chatModelFactory;
     private final int defaultMaxResults;
-    private final String apiKey = "sk-312e8115d128601865a1cb57dbae20a41762d5484ef14f3d18dc048931a42f04";
-    private final String modelName = "gpt-5.5";
+    private final boolean agentEnabled;
     private final CurrentUser currentUser;
     private final Map<String, ChatMemory> memoryStore = new ConcurrentHashMap<>();
     private final Map<String, RagConversationContext> conversationStore = new ConcurrentHashMap<>();
@@ -67,7 +71,10 @@ public class InMemoryRagService implements RagService {
                               RagEmbeddingService embeddingService,
                               RagVectorStore vectorStore,
                               RagDocumentFileParser fileParser,
+                              RagAgentService ragAgentService,
+                              RagChatModelFactory chatModelFactory,
                               @Value("${rag.max-results:5}") int defaultMaxResults,
+                              @Value("${rag.agent.enabled:true}") boolean agentEnabled,
                               CurrentUser currentUser) {
         this.documentMapper = documentMapper;
         this.chunkMapper = chunkMapper;
@@ -75,11 +82,15 @@ public class InMemoryRagService implements RagService {
         this.embeddingService = embeddingService;
         this.vectorStore = vectorStore;
         this.fileParser = fileParser;
+        this.ragAgentService = ragAgentService;
+        this.chatModelFactory = chatModelFactory;
         this.defaultMaxResults = defaultMaxResults;
+        this.agentEnabled = agentEnabled;
         this.currentUser = currentUser;
 
     }
 
+    //添加文档
     @Override
     @Transactional
     public RagDocumentResponse addDocument(RagDocumentRequest request) {
@@ -175,13 +186,6 @@ public class InMemoryRagService implements RagService {
     }
 
     public interface Assistant {
-        // @SystemMessage("""
-        //     你是一个专业的英语学习助手。
-        //     规则：
-        //     1. 只回答和英语学习相关的问题
-        //     2. 用中文解释语法，用英文举例
-        //     3. 回答控制在200字以内
-        //     """)
         String chat(@MemoryId String sessionId, @UserMessage String message);
     }
 
@@ -189,47 +193,33 @@ public class InMemoryRagService implements RagService {
     public RagAnswerResponse ask(String question, Integer topK) {
         Long userId = currentUser.getUserId();
         String sessionId = String.valueOf(userId);
+        if (agentEnabled) {
+            try {
+                return askWithAgent(question, topK, sessionId, userId);
+            } catch (RuntimeException error) {
+                log.warn("RAG agent failed, falling back to retrieved-context answer.", error);
+            }
+        }
+        return askWithRetrievedContext(question, topK, sessionId);
+    }
+
+    private RagAnswerResponse askWithAgent(String question, Integer topK, String sessionId, Long userId) {
+        return ragAgentService.ask(question, topK, sessionId, userId, chatMemoryProvider(), this::searchKnowledgeBaseForAgent);
+    }
+
+    private RagAnswerResponse askWithRetrievedContext(String question, Integer topK, String sessionId) {
         ConversationSearchResult searchResult = searchForConversation(question, topK, sessionId);
         List<RagSearchItem> references = searchResult.references();
         if (references.isEmpty()) {
             return new RagAnswerResponse("暂时没有检索到相关资料，请先上传文档或换一个问题。", references);
         }
 
-        OpenAiChatModel model = OpenAiChatModel.builder()
-            .apiKey(apiKey)
-            .modelName(modelName)
-            .baseUrl("https://sub2api.sxlx.tech/v1")
-            .build();
-        ChatMemoryProvider chatMemoryProvider = new ChatMemoryProvider() {
-            @Override
-            public ChatMemory get(Object memoryId) {
-                String sessionId = (String) memoryId;
-                // computeIfAbsent 这个方法的意思是：
-                // 先去 memoryStore 这个 Map 里面查找，有没有 sessionId 这个键对应的值；
-                // 如果已经存在，就直接把已经存在的这个记忆对象返回，不会重新创建；
-                // 如果不存在，才会调用后面这个函数，创建一个新的记忆对象，
-                // 并且把它存入这个 Map 里面，同时把它返回出去。
-                return memoryStore.computeIfAbsent(sessionId, id -> MessageWindowChatMemory.withMaxMessages(20));
-            }
-        };
         Assistant assistant = AiServices.builder(Assistant.class)
-            .chatModel(model)
-            .chatMemoryProvider(chatMemoryProvider)
-            // .chatMemory(chatMemory)
-            .build();
+                .chatModel(chatModelFactory.chatModel())
+                .chatMemoryProvider(chatMemoryProvider())
+                .build();
         String answer = assistant.chat(sessionId, buildRagPrompt(question, searchResult));
-        // if (references.isEmpty()) {
-        //     return new RagAnswerResponse("暂时没有检索到相关资料，请先上传文档或换一个问题。", references);
-        // }
-        // StringBuilder answer = new StringBuilder("已根据知识库检索到相关片段：");
-        // for (int i = 0; i < references.size(); i++) {
-        //     RagSearchItem item = references.get(i);
-        //     answer.append("\n").append(i + 1).append(". ")
-        //             .append(item.getTitle()).append("：")
-        //             .append(item.getSnippet());
-        // }
-        // answer.append("\n\n当前 rag-service 已完成检索骨架，后续可以在这里接入向量库和大模型生成最终答案。");
-        return new RagAnswerResponse(answer.toString(), references);
+        return new RagAnswerResponse(answer, references);
     }
 
     @Override
@@ -238,6 +228,32 @@ public class InMemoryRagService implements RagService {
             if (sessionId == null || sessionId.isBlank()) {
                 throw new RuntimeException("未登录");
             }
+            Long userId = parseUserId(sessionId);
+            if (agentEnabled) {
+                askStreamWithAgent(question, topK, sessionId, userId, handler);
+                return;
+            }
+            askStreamWithRetrievedContext(question, topK, sessionId, handler);
+        } catch (Throwable error) {
+            handler.onError(error);
+        }
+    }
+
+    private void askStreamWithAgent(String question, Integer topK, String sessionId, Long userId, RagStreamHandler handler) {
+        ragAgentService.askStream(
+                question,
+                topK,
+                sessionId,
+                userId,
+                chatMemoryProvider(),
+                this::searchKnowledgeBaseForAgent,
+                handler,
+                () -> askStreamWithRetrievedContext(question, topK, sessionId, handler)
+        );
+    }
+
+    private void askStreamWithRetrievedContext(String question, Integer topK, String sessionId, RagStreamHandler handler) {
+        try {
             ConversationSearchResult searchResult = searchForConversation(question, topK, sessionId);
             List<RagSearchItem> references = searchResult.references();
             handler.onReferences(references);
@@ -247,13 +263,7 @@ public class InMemoryRagService implements RagService {
                 return;
             }
 
-            OpenAiStreamingChatModel model = OpenAiStreamingChatModel.builder()
-                    .apiKey(apiKey)
-                    .modelName(modelName)
-                    .baseUrl("https://sub2api.sxlx.tech/v1")
-                    .build();
-
-            model.chat(buildRagPrompt(question, searchResult), new StreamingChatResponseHandler() {
+            chatModelFactory.streamingChatModel().chat(buildRagPrompt(question, searchResult), new StreamingChatResponseHandler() {
                 @Override
                 public void onPartialResponse(String partialResponse) {
                     handler.onToken(partialResponse);
@@ -272,6 +282,55 @@ public class InMemoryRagService implements RagService {
         } catch (Throwable error) {
             handler.onError(error);
         }
+    }
+
+    
+    private ChatMemoryProvider chatMemoryProvider() {
+        return memoryId -> {
+            String id = String.valueOf(memoryId);
+            return memoryStore.computeIfAbsent(id, ignored -> MessageWindowChatMemory.withMaxMessages(20));
+        };
+    }
+
+    private KnowledgeBaseToolResult searchKnowledgeBaseForAgent(String question, Integer topK, String sessionId) {
+        ConversationSearchResult searchResult = searchForConversation(question, topK, sessionId);
+        return new KnowledgeBaseToolResult(
+                buildKnowledgeToolResult(question, searchResult),
+                searchResult.references()
+        );
+    }
+
+    private Long parseUserId(String sessionId) {
+        try {
+            return Long.valueOf(sessionId);
+        } catch (NumberFormatException error) {
+            throw new RuntimeException("未登录");
+        }
+    }
+
+    private String buildKnowledgeToolResult(String question, ConversationSearchResult searchResult) {
+        List<RagSearchItem> references = searchResult.references();
+        if (references.isEmpty()) {
+            return "知识库没有检索到相关资料。";
+        }
+
+        StringBuilder result = new StringBuilder();
+        result.append("已从知识库检索到 ").append(references.size()).append(" 条相关资料。")
+                .append("请只根据这些资料回答，不要展示标题、来源或原始片段。\n");
+        if (searchResult.reusedContext()) {
+            result.append("当前问题可能承接上一轮上下文。最近明确问题：")
+                    .append(searchResult.anchorQuestion())
+                    .append("\n");
+        }
+        result.append("用户问题：").append(question).append("\n");
+
+        for (int i = 0; i < references.size(); i++) {
+            RagSearchItem item = references.get(i);
+            result.append("资料").append(i + 1).append("：")
+                    .append(repairMojibake(item.getSnippet()))
+                    .append("\n");
+        }
+        return result.toString();
     }
 
     private String buildRagPrompt(String question, List<RagSearchItem> references) {

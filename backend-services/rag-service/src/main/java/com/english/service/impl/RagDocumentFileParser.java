@@ -46,6 +46,7 @@ public class RagDocumentFileParser {
         return new ParsedDocument(titleFromFilename(originalFilename), originalFilename, normalized);
     }
 
+    //判断文件是否为空，是否超过最大上传限制
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Uploaded file cannot be empty");
@@ -86,6 +87,7 @@ public class RagDocumentFileParser {
         if (content == null) {
             return "";
         }
+        //替换掉不可见字符，换行符统一为 \n，连续空格和制表符替换为单个空格，连续换行符替换为两个换行符，去掉首尾空白
         return content
                 .replace('\u0000', ' ')
                 .replace('\u000B', '\n')
@@ -97,6 +99,7 @@ public class RagDocumentFileParser {
                 .trim();
     }
 
+    //文件名清理，去掉路径，只保留文件名
     private String cleanFilename(String filename) {
         if (filename == null || filename.isBlank()) {
             return "uploaded-document";
@@ -106,6 +109,7 @@ public class RagDocumentFileParser {
         return slash >= 0 ? normalized.substring(slash + 1) : normalized;
     }
 
+    //获取文件扩展名，返回小写形式
     private String extensionOf(String filename) {
         int dot = filename.lastIndexOf('.');
         return dot < 0 ? "" : filename.substring(dot + 1).toLowerCase(Locale.ROOT);
