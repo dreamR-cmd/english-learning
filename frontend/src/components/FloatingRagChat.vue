@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { streamRagQuestion } from '../utils/api'
 
 defineProps({
@@ -61,6 +61,7 @@ const busy = ref(false)
 const question = ref('')
 const messages = ref([])
 const bodyRef = ref(null)
+const MAX_VISIBLE_MESSAGES = 20
 
 function createMessageId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -69,12 +70,29 @@ function createMessageId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+function keepLatestMessages() {
+  if (messages.value.length > MAX_VISIBLE_MESSAGES) {
+    messages.value = messages.value.slice(-MAX_VISIBLE_MESSAGES)
+  }
+}
+
+function updateMessage(messageId, updater) {
+  const message = messages.value.find(item => item.id === messageId)
+  if (message) updater(message)
+}
+
 async function scrollToBottom() {
   await nextTick()
   if (bodyRef.value) {
     bodyRef.value.scrollTop = bodyRef.value.scrollHeight
   }
 }
+
+watch(open, isOpen => {
+  if (isOpen) {
+    scrollToBottom()
+  }
+})
 
 async function submitQuestion() {
   const currentQuestion = question.value
@@ -85,6 +103,8 @@ async function submitQuestion() {
     role: 'user',
     content: currentQuestion
   })
+  keepLatestMessages()
+  await scrollToBottom()
 
   question.value = ''
   busy.value = true
@@ -95,31 +115,31 @@ async function submitQuestion() {
     content: ''
   }
   messages.value.push(assistantMessage)
-  const assistantIndex = messages.value.length - 1
+  keepLatestMessages()
   await scrollToBottom()
 
   try {
     await streamRagQuestion(currentQuestion, 5, {
       onToken(token) {
-        const message = messages.value[assistantIndex]
-        if (message) {
+        updateMessage(assistantMessage.id, message => {
           message.content += token
-          scrollToBottom()
-        }
+        })
+        scrollToBottom()
       },
       onDone() {
-        const message = messages.value[assistantIndex]
-        if (message && !message.content) {
-          message.content = '回答已结束。'
-        }
+        updateMessage(assistantMessage.id, message => {
+          if (!message.content) {
+            message.content = '回答已结束。'
+          }
+        })
         scrollToBottom()
       }
     })
   } catch (error) {
-    const message = messages.value[assistantIndex]
-    if (message) {
+    updateMessage(assistantMessage.id, message => {
       message.content = error?.message || 'RAG 对话失败'
-    }
+    })
+    await scrollToBottom()
   } finally {
     busy.value = false
     await scrollToBottom()
@@ -149,7 +169,7 @@ async function submitQuestion() {
 
 .rag-window {
   width: min(360px, calc(100vw - 32px));
-  height: min(520px, calc(100vh - 48px));
+  height: min(500px, calc(100vh - 48px));
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
@@ -184,9 +204,16 @@ async function submitQuestion() {
   display: grid;
   align-content: start;
   gap: 10px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 12px;
   background: #f8fafc;
+  scrollbar-width: none;
+}
+
+.rag-body::-webkit-scrollbar {
+  display: none;
 }
 
 .rag-message {
@@ -204,8 +231,9 @@ async function submitQuestion() {
 
 .rag-message p {
   margin: 0;
-  white-space: pre-wrap;
+  white-space: pre-line;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .rag-empty {
@@ -226,8 +254,9 @@ async function submitQuestion() {
 .rag-input textarea {
   width: 100%;
   min-height: 46px;
-  max-height: 110px;
-  resize: vertical;
+  max-height: 70px;
+  resize: none;
+  overflow: hidden;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   padding: 8px;

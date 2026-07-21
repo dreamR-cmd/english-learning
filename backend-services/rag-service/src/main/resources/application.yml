@@ -38,7 +38,8 @@ rag:
     enabled: ${RAG_AGENT_ENABLED:true}
     user-service-url: ${RAG_USER_SERVICE_URL:http://localhost:8088}
     learning-service-url: ${RAG_LEARNING_SERVICE_URL:http://localhost:8089}
-    max-tool-output-chars: ${RAG_AGENT_MAX_TOOL_OUTPUT_CHARS:5000}
+    max-tool-output-chars: ${RAG_AGENT_MAX_TOOL_OUTPUT_CHARS:12000}
+    max-tool-list-items: ${RAG_AGENT_MAX_TOOL_LIST_ITEMS:30}
   document:
     max-upload-bytes: ${RAG_DOCUMENT_MAX_UPLOAD_BYTES:20971520}
   chunk:

@@ -2,41 +2,32 @@ package com.english.service.impl.agent;
 
 import com.english.dto.RagAnswerResponse;
 import com.english.service.RagService;
-import com.english.service.impl.RagInternalApiClient;
 import com.english.service.impl.tools.KnowledgeBaseTool;
-import com.english.service.impl.tools.RagAgentTools;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
-import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.MemoryId;
-import dev.langchain4j.service.TokenStream;
-import dev.langchain4j.service.UserMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 @Component
 public class RagAgentService {
     private static final Logger log = LoggerFactory.getLogger(RagAgentService.class);
-    private static final String AGENT_SYSTEM_MESSAGE = """
-            你是英语学习平台内的 AI 学习助手，可以根据用户意图调用后端工具获取平台数据。
-            工具规则：
-            1. 解释单词、语法、作文、上传文档或知识库资料时，先调用 searchKnowledgeBase。
-            2. 查询今日单词、复习单词、错题记录、模块单词时，调用对应的只读工具。
-            3. 工具返回的是内部数据，只能提炼总结，不要原样展示 JSON、标题、来源或资料片段。
-            4. 不要编造平台数据；工具没有查到时，直接说明没有查到。
-            5. 不要执行删除、修改、购买、提交答案等写操作；遇到这类需求，只说明需要用户确认后在页面操作。
-            6. 回答以中文为主，必要时给英文例句，尽量控制在 300 字以内。
-            """;
 
-    private final RagInternalApiClient internalApiClient;
-    private final RagChatModelFactory chatModelFactory;
+    private final RagIntentRouter intentRouter;
+    private final KnowledgeAgent knowledgeAgent;
+    private final LearningAgent learningAgent;
+    private final WrongRecordAgent wrongRecordAgent;
+    private final SafetyAgent safetyAgent;
 
-    public RagAgentService(RagInternalApiClient internalApiClient,
-                           RagChatModelFactory chatModelFactory) {
-        this.internalApiClient = internalApiClient;
-        this.chatModelFactory = chatModelFactory;
+    public RagAgentService(RagIntentRouter intentRouter,
+                           KnowledgeAgent knowledgeAgent,
+                           LearningAgent learningAgent,
+                           WrongRecordAgent wrongRecordAgent,
+                           SafetyAgent safetyAgent) {
+        this.intentRouter = intentRouter;
+        this.knowledgeAgent = knowledgeAgent;
+        this.learningAgent = learningAgent;
+        this.wrongRecordAgent = wrongRecordAgent;
+        this.safetyAgent = safetyAgent;
     }
 
     public RagAnswerResponse ask(String question,
@@ -45,18 +36,10 @@ public class RagAgentService {
                                  Long userId,
                                  ChatMemoryProvider chatMemoryProvider,
                                  KnowledgeBaseTool knowledgeBaseTool) {
-        RagAgentTools tools = createTools(userId, sessionId, topK, knowledgeBaseTool);
-        Assistant assistant = AiServices.builder(Assistant.class)
-                .chatModel(chatModelFactory.chatModel())
-                .chatMemoryProvider(chatMemoryProvider)
-                .systemMessage(AGENT_SYSTEM_MESSAGE)
-                .tools(tools)
-                .maxToolCallingRoundTrips(4)
-                .maxSequentialToolsInvocations(6)
-                .compensateOnToolErrors(true)
-                .build();
-        String answer = assistant.chat(sessionId, buildAgentUserMessage(question));
-        return new RagAnswerResponse(answer, tools.references());
+        AgentRequestContext context = new AgentRequestContext(question, topK, sessionId, userId, chatMemoryProvider, knowledgeBaseTool);
+        AgentIntent intent = intentRouter.route(question);
+        log.debug("RAG agent routed question to {}", intent);
+        return selectAgent(intent).ask(context);
     }
 
     public void askStream(String question,
@@ -67,64 +50,18 @@ public class RagAgentService {
                           KnowledgeBaseTool knowledgeBaseTool,
                           RagService.RagStreamHandler handler,
                           Runnable fallback) {
-        RagAgentTools tools = createTools(userId, sessionId, topK, knowledgeBaseTool);
-        AtomicBoolean emittedToken = new AtomicBoolean(false);
-        StreamingAssistant assistant = AiServices.builder(StreamingAssistant.class)
-                .streamingChatModel(chatModelFactory.streamingChatModel())
-                .chatMemoryProvider(chatMemoryProvider)
-                .systemMessage(AGENT_SYSTEM_MESSAGE)
-                .tools(tools)
-                .maxToolCallingRoundTrips(4)
-                .maxSequentialToolsInvocations(6)
-                .compensateOnToolErrors(true)
-                .build();
-
-        assistant.chat(sessionId, buildAgentUserMessage(question))
-                .onPartialResponse(token -> {
-                    emittedToken.set(true);
-                    handler.onToken(token);
-                })
-                .onToolExecuted(toolExecution -> handler.onReferences(tools.references()))
-                .onCompleteResponse(response -> {
-                    handler.onReferences(tools.references());
-                    handler.onComplete();
-                })
-                .onError(error -> {
-                    if (emittedToken.get()) {
-                        handler.onError(error);
-                        return;
-                    }
-                    log.warn("RAG streaming agent failed, falling back to retrieved-context stream.", error);
-                    runFallback(fallback, handler, error);
-                })
-                .start();
+        AgentRequestContext context = new AgentRequestContext(question, topK, sessionId, userId, chatMemoryProvider, knowledgeBaseTool);
+        AgentIntent intent = intentRouter.route(question);
+        log.debug("RAG streaming agent routed question to {}", intent);
+        selectAgent(intent).askStream(context, handler, fallback);
     }
 
-    public interface Assistant {
-        String chat(@MemoryId String sessionId, @UserMessage String message);
-    }
-
-    public interface StreamingAssistant {
-        TokenStream chat(@MemoryId String sessionId, @UserMessage String message);
-    }
-
-    private RagAgentTools createTools(Long userId, String sessionId, Integer topK, KnowledgeBaseTool knowledgeBaseTool) {
-        return new RagAgentTools(userId, sessionId, topK, internalApiClient, knowledgeBaseTool);
-    }
-
-    private String buildAgentUserMessage(String question) {
-        return "用户问题：\n" + (question == null ? "" : question.trim()) + "\n\n请判断用户意图，必要时先调用工具获取平台数据，再给出回答。";
-    }
-
-    private void runFallback(Runnable fallback, RagService.RagStreamHandler handler, Throwable originalError) {
-        if (fallback == null) {
-            handler.onError(originalError);
-            return;
-        }
-        try {
-            fallback.run();
-        } catch (Throwable fallbackError) {
-            handler.onError(fallbackError);
-        }
+    private SpecialistAgent selectAgent(AgentIntent intent) {
+        return switch (intent) {
+            case LEARNING_PLAN -> learningAgent;
+            case WRONG_RECORD -> wrongRecordAgent;
+            case USER_ACTION -> safetyAgent;
+            case PRACTICE_GENERATE, WRITING_CORRECTION, GENERAL_CHAT, KNOWLEDGE_QA -> knowledgeAgent;
+        };
     }
 }
