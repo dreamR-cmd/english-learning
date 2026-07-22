@@ -37,6 +37,12 @@ spring:
 shop:
   order:
     timeout-minutes: ${ORDER_TIMEOUT_MINUTES:10}
+  search:
+    enabled: ${SHOP_SEARCH_ENABLED:true}
+    elasticsearch-url: ${ELASTICSEARCH_URL:http://localhost:9200}
+    index-name: ${SHOP_PRODUCT_INDEX:shop_products}
+    cache-ttl-seconds: ${SHOP_SEARCH_CACHE_TTL_SECONDS:300}
+    max-results: ${SHOP_SEARCH_MAX_RESULTS:50}
 
 admin:
   token:

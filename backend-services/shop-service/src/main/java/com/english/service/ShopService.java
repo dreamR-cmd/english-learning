@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface ShopService {
     List<ShopProduct> getProducts();
+    List<ShopProduct> searchProducts(String keyword);
     OrderTokenResponse createOrderToken(Long userId, Long productId);
     ShopOrder createOrder(Long userId, Long productId, String requestId);
     SeckillOrderSubmitResponse submitSeckillOrder(Long userId, Long productId, String requestId);

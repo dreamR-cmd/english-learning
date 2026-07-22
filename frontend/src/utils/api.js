@@ -121,6 +121,10 @@ export function getShopProducts() {
   return api.get('/shop/products')
 }
 
+export function searchShopProducts(keyword) {
+  return api.get('/shop/products/search', { params: { keyword } })
+}
+
 export function createShopOrderToken(userId, productId) {
   return api.post('/shop/order-tokens', { productId })
 }

@@ -69,6 +69,26 @@ services:
     networks:
       - english-learning
 
+  elasticsearch:
+    image: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:8.14.3}
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      TZ: Asia/Shanghai
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1"]
+      interval: 10s
+      timeout: 8s
+      retries: 12
+      start_period: 40s
+    networks:
+      - english-learning
+
   migration-service:
     build:
       context: .
@@ -171,6 +191,7 @@ services:
       <<: *backend-env
       SHOP_SERVICE_PORT: "8090"
       ORDER_TIMEOUT_MINUTES: "10"
+      ELASTICSEARCH_URL: http://elasticsearch:9200
     expose:
       - "8090"
     depends_on:
@@ -181,6 +202,8 @@ services:
       redis:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
     networks:
       - english-learning
@@ -292,6 +315,7 @@ volumes:
   mysql_data:
   redis_data:
   rabbitmq_data:
+  elasticsearch_data:
 
 networks:
   english-learning:

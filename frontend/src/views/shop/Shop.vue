@@ -20,7 +20,21 @@
         <span>备考书籍</span>
       </section>
 
-      <section class="product-grid">
+      <section class="shop-search" aria-label="商品搜索">
+        <label class="search-box">
+          <span>搜索商品</span>
+          <input
+            v-model="searchKeyword"
+            type="search"
+            placeholder="输入课程、真题、词汇、考研..."
+            autocomplete="off"
+          />
+        </label>
+        <button v-if="searchKeyword" class="clear-search-btn" type="button" @click="clearSearch">清空</button>
+        <span v-if="searching" class="searching-tip">搜索中...</span>
+      </section>
+
+      <section v-if="products.length" class="product-grid">
         <article
           v-for="product in products"
           :key="product.id"
@@ -51,6 +65,10 @@
           </div>
         </article>
       </section>
+      <section v-else class="empty-products">
+        <strong>{{ searchKeyword.trim() ? '没有找到相关商品' : '暂无商品' }}</strong>
+        <span v-if="searchKeyword.trim()">换个关键词再试试</span>
+      </section>
 
       <p v-if="message" class="selected-tip">{{ message }}</p>
       <p v-if="errorMessage" class="error-tip">{{ errorMessage }}</p>
@@ -59,14 +77,15 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '../../components/NavBar.vue'
 import {
   createSeckillShopOrder,
   createShopOrderToken,
   getSeckillShopOrderResult,
-  getShopProducts
+  getShopProducts,
+  searchShopProducts
 } from '../../utils/api'
 import { currentUser } from '../../utils/currentUser'
 
@@ -76,7 +95,11 @@ const products = ref([])
 const buyingProductId = ref(null)
 const message = ref('')
 const errorMessage = ref('')
+const searchKeyword = ref('')
+const searching = ref(false)
 const pendingOrderRequestIds = new Map()
+let searchTimer = null
+let searchRequestSeq = 0
 
 function backToModules() {
   router.push('/modules')
@@ -172,13 +195,47 @@ function normalizeProduct(product) {
   }
 }
 
-onMounted(async () => {
+async function loadProducts() {
+  const keyword = searchKeyword.value.trim()
+  const requestSeq = ++searchRequestSeq
+  searching.value = Boolean(keyword)
+  errorMessage.value = ''
   try {
-    const response = await getShopProducts()
+    const response = keyword ? await searchShopProducts(keyword) : await getShopProducts()
+    if (requestSeq !== searchRequestSeq) return
     products.value = (response.data.data || []).map(normalizeProduct)
   } catch (error) {
     console.error('Failed to load products', error)
     errorMessage.value = '商品加载失败，请稍后重试'
+  } finally {
+    if (requestSeq === searchRequestSeq) {
+      searching.value = false
+    }
+  }
+}
+
+function scheduleProductSearch() {
+  if (searchTimer) {
+    window.clearTimeout(searchTimer)
+  }
+  searchTimer = window.setTimeout(() => {
+    loadProducts()
+  }, 300)
+}
+
+function clearSearch() {
+  searchKeyword.value = ''
+}
+
+watch(searchKeyword, scheduleProductSearch)
+
+onMounted(() => {
+  loadProducts()
+})
+
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    window.clearTimeout(searchTimer)
   }
 })
 </script>
@@ -271,6 +328,61 @@ onMounted(async () => {
   color: #526057;
   font-size: 13px;
   font-weight: 700;
+}
+
+.shop-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.search-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.search-box span {
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.search-box input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #102018;
+  font-size: 15px;
+}
+
+.search-box input::placeholder {
+  color: #94a3b8;
+}
+
+.clear-search-btn {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #475569;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 11px 14px;
+}
+
+.searching-tip {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .product-grid {
@@ -410,6 +522,24 @@ onMounted(async () => {
   border: 1px solid #fecaca;
 }
 
+.empty-products {
+  min-height: 180px;
+  border: 1px dashed rgba(148, 163, 184, 0.55);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.empty-products strong {
+  color: #334155;
+  font-size: 18px;
+}
+
 @media (max-width: 768px) {
   .shop-content {
     padding: 28px 16px 36px;
@@ -426,6 +556,20 @@ onMounted(async () => {
   }
 
   .back-btn {
+    width: 100%;
+  }
+
+  .shop-search {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search-box {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .clear-search-btn {
     width: 100%;
   }
 }

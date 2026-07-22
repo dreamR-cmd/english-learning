@@ -37,6 +37,14 @@ public class ShopController {
         return ApiResult.success(shopService.getProducts());
     }
 
+    @Operation(summary = "搜索商品", description = "使用 Elasticsearch 搜索商品标题、分类、标签、描述和卖点；最终展示数据仍以 MySQL 和 Redis 库存为准。")
+    @GetMapping("/products/search")
+    public ApiResult<List<ShopProduct>> searchProducts(
+            @Parameter(description = "搜索关键词，例如 CET、真题、词汇、考研")
+            @RequestParam(required = false) String keyword) {
+        return ApiResult.success(shopService.searchProducts(keyword));
+    }
+
     @Operation(summary = "申请下单幂等性 token", description = "为一次下单意图签发 token，前端创建订单时需要带回该 token。")
     @PostMapping("/order-tokens")
     public ApiResult<OrderTokenResponse> createOrderToken(@RequestHeader(USER_ID_HEADER) Long userId,

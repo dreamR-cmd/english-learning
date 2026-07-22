@@ -1,43 +1,40 @@
 # English Learning（英语学习平台）
 
-一个面向 CET-4 / CET-6、考研英语、托福、雅思、GRE 等考试的英语学习平台，提供单词、阅读、听力练习、考试倒计时、错题本、收藏夹、精选读物、学习商城和后台管理功能。
+面向 CET-4、CET-6、考研英语、托福、雅思、GRE 等场景的英语学习平台。项目包含学习练习、用户中心、商城订单、后台管理、RAG 知识库问答等模块，当前主线架构是 **Vue 3 + Vite 前端**、**Spring Cloud Gateway** 和多个 **Spring Boot 3 微服务**。
 
-当前项目采用 **Vue 3 + Vite 前端** 与 **Spring Boot 3 微服务后端** 的前后端分离架构，同时保留了一个单体后端用于兼容或简化本地调试。
+> 当前文档基于 2026-07-22 的仓库状态整理。`backend-services/backend` 是保留的单体后端，主线开发以 `backend-services` 下的微服务为准。
 
-> 本文档主要描述 `backend-services` 下的微服务架构；`backend-services/backend` 是保留的单体后端。
+## 当前能力
 
-## 功能特性
-
-- **多考试模块**：CET-4、CET-6、托福、雅思、考研英语、GRE 等模块。
-- **学习练习**：单词、阅读、听力练习，按模块归类。
-- **每日单词**：根据用户每日目标生成每日单词任务，并记录熟练度。
-- **复习机制**：单词多次标记“认识”后进入复习列表。
-- **考试倒计时**：后端根据考试规则自动计算下一场考试时间。
-- **用户体系**：注册 / 登录、资料修改、每日单词目标设置。
-- **错题本与收藏夹**：记录错题，收藏阅读篇目和精选读物。
-- **精选读物**：独立于阅读理解题库的分级读物模块。
-- **学习商城**：商品列表、下单、模拟支付、订单查询。
-- **后端签发下单幂等性 token**：前端下单前先向后端申请一次性 token，避免连续点击或并发重放生成重复订单。
-- **订单防重复与防超卖**：使用 Gateway 限流、幂等性 token、Redisson 分布式锁、Redis 幂等 key、数据库唯一约束和数据库原子扣库存多层兜底。
-- **秒杀排队下单**：使用 Redis 预扣库存、RabbitMQ 异步消费创建订单，前端轮询下单结果。
-- **订单超时取消**：使用 RabbitMQ TTL + 死信队列实现未支付订单超时取消并回补库存。
-- **商城缓存穿透防护**：商品 ID 查询加入非法 ID 拦截、Redis Bitmap 布隆过滤器、空值缓存和定时双 Buffer 重建。
-- **Gateway 令牌桶限流**：登录、商城和下单接口在网关层使用 RedisRateLimiter 削峰限流。
-- **独立后台管理服务**：后台订单、模块、用户、角色、权限统一由 `admin-service` 承接。
+- 多考试模块：CET-4、CET-6、托福、雅思、考研英语、GRE。
+- 学习练习：单词、每日单词、复习单词、阅读、听力。
+- 用户中心：注册、登录、资料设置、错题本、阅读收藏、精选读物收藏。
+- 商城交易：商品列表、商品搜索、同步下单、秒杀排队下单、模拟支付、订单查询、超时取消。
+- 并发治理：Gateway 令牌桶限流、后端一次性下单 token、Redis 幂等 key、Redisson 分布式锁、数据库唯一约束、数据库原子扣库存。
+- 缓存防护：商品库存 Redis 缓存、非法 ID 拦截、Bitmap 布隆过滤器、空值缓存、双 Buffer 定时重建。
+- 搜索能力：商城商品使用 Elasticsearch 建索引，Redis 缓存搜索结果，失败时回退 MySQL 模糊查询。
+- 后台管理：订单、模块、用户、角色、权限、审计日志、权限变更日志。
+- 风险控制：管理员敏感操作需要 `CONFIRM` 二次确认，系统内置角色和模块受后端保护。
+- RAG 知识库：文本/PDF/Word 文档入库、切片、向量检索、知识库问答、SSE 流式回答、前台悬浮 AI 对话。
+- 数据治理：通过 `migration-service` 运行 Flyway 迁移脚本，基础数据由版本化 SQL 初始化。
+- 网关边界：Gateway 校验登录态后注入 `X-User-Id`，并向下游注入 `X-Internal-Gateway-Secret`，下游服务拒绝绕过网关的普通业务请求。
 
 ## 技术栈
 
 | 层 | 技术 |
-|----|------|
+|---|---|
 | 前端 | Vue 3、Vue Router 4、Pinia、Axios、Vite 5 |
-| 网关 | Spring Cloud Gateway、Spring Boot Actuator、统一登录态认证、RedisRateLimiter 令牌桶限流 |
+| 网关 | Spring Cloud Gateway、RedisRateLimiter、Actuator |
 | 后端 | Spring Boot 3.2.5、Spring Web、Spring Data JPA、Bean Validation |
-| 数据库 | MySQL 8 |
-| 中间件 | Redis、RabbitMQ、Redisson |
-| 文档 | springdoc-openapi |
-| 安全 | Argon2 密码哈希、自定义 HMAC Token、Gateway 统一认证、RBAC 权限 |
-| 构建 | Maven（后端）、npm + Vite（前端） |
-| JDK | Java 17 |
+| 数据库迁移 | Flyway、MySQL 8 |
+| 缓存和向量检索 | Redis / Redis Stack、Redisson、RediSearch Vector |
+| 消息队列 | RabbitMQ、TTL 队列、死信队列 |
+| 商品搜索 | Elasticsearch 8、Redis 搜索结果缓存 |
+| RAG | LangChain4j、OpenAI-compatible API、PDFBox、Apache POI |
+| 文档 | springdoc-openapi / Swagger UI |
+| 安全 | Argon2 密码哈希、自定义 HMAC Token、Gateway 统一认证、RBAC、内部网关密钥 |
+| 构建 | Maven、npm、Docker Compose |
+| 运行时 | Java 17、Node.js 18+ |
 
 ## 项目结构
 
@@ -45,57 +42,84 @@
 english-learning/
 ├── README.md
 ├── PROJECT_ANALYSIS.md
-├── frontend/                         # Vue 3 + Vite 前端
+├── docker-compose.yml
+├── Dockerfile.backend
+├── services.ps1
+├── docs/
+│   └── sql/
+│       └── cleanup-test-data.sql
+├── frontend/
 │   ├── package.json
 │   ├── vite.config.js
 │   └── src/
 │       ├── components/
+│       │   └── FloatingRagChat.vue
 │       ├── router/
 │       ├── utils/
 │       └── views/
 └── backend-services/
-    ├── gateway/                      # Spring Cloud Gateway，默认 8081
-    ├── auth-service/                 # 登录注册与 Token 创建，默认 8087
-    ├── user-service/                 # 用户资料、错题、收藏、单词进度，默认 8088
-    ├── learning-service/             # 模块、单词/阅读/听力、精选读物，默认 8089
-    ├── shop-service/                 # 商城、订单、库存、秒杀排队、超时取消，默认 8090
-    ├── admin-service/                # 后台管理聚合服务，默认 8091
-    └── backend/                      # 保留的单体 Spring Boot 后端，默认 8081
+    ├── gateway/              # 统一 API 入口，默认 8081
+    ├── migration-service/    # Flyway 数据库迁移，一次性任务
+    ├── auth-service/         # 登录、注册、Token 签发，默认 8087
+    ├── user-service/         # 用户资料、错题、收藏、单词进度，默认 8088
+    ├── learning-service/     # 模块、单词、阅读、听力、精选读物，默认 8089
+    ├── shop-service/         # 商城、订单、库存、搜索、秒杀，默认 8090
+    ├── admin-service/        # 后台管理、RBAC、审计，默认 8091
+    ├── rag-service/          # RAG 文档、检索、问答，默认 8092
+    └── backend/              # 保留的单体兼容后端
 ```
 
-## 后端服务划分
+## 服务划分
 
-| 服务 | 默认端口 | 职责 |
+| 服务 | 端口 | 职责 |
 |---|---:|---|
-| gateway | 8081 | 统一 API 入口、CORS、路由转发、登录态认证、用户上下文透传、Swagger 入口转发 |
-| auth-service | 8087 | 登录、注册、密码加密、Token 创建 |
-| user-service | 8088 | 用户资料、错题本、收藏夹、单词进度 |
-| learning-service | 8089 | 考试模块、单词/阅读/听力练习、精选读物、Swagger UI 多文档入口 |
-| shop-service | 8090 | 商品、订单、库存扣减、秒杀排队下单、模拟支付、订单超时取消 |
-| admin-service | 8091 | 后台订单、模块、用户、角色、权限管理与后台权限校验 |
-| backend | 8081 | 单体兼容后端，包含主要业务模块 |
+| frontend | 3000 | Vue 前端页面，开发环境代理到 Gateway |
+| gateway | 8081 | 统一入口、路由、认证、用户上下文透传、限流、Swagger 转发 |
+| migration-service | 无 Web 端口 | 启动后执行 Flyway 迁移并退出 |
+| auth-service | 8087 | 登录、注册、密码哈希、Token 签发 |
+| user-service | 8088 | 个人资料、错题本、收藏夹、单词掌握进度 |
+| learning-service | 8089 | 考试模块、单词/阅读/听力练习、精选读物 |
+| shop-service | 8090 | 商品、搜索、订单、库存、秒杀排队、超时取消 |
+| admin-service | 8091 | 后台管理、权限校验、审计日志、风险确认 |
+| rag-service | 8092 | RAG 文档入库、向量检索、问答、流式输出 |
+
+## 请求链路
+
+推荐访问路径：
+
+```text
+浏览器 -> frontend:3000 -> gateway:8081 -> auth/user/learning/shop/admin/rag 服务
+```
+
+Gateway 会做三件关键事情：
+
+1. 校验 `/api/**` 的 `Authorization: Bearer <token>`，登录和注册接口除外。
+2. 校验通过后注入 `X-User-Id` 和 `X-Token-Expires-At`。
+3. 向所有下游请求注入 `X-Internal-Gateway-Secret`，下游服务用它拦截直接访问。
+
+Docker Compose 中大部分业务服务使用 `expose` 只在内部网络暴露，统一入口是 `gateway:8081`。`rag-service` 当前仍映射了 `8092` 和 `5006`，便于本地调试；生产环境建议改为仅内部暴露。
 
 ## Gateway 路由
-
-`backend-services/gateway` 默认将请求转发到对应服务：
 
 | 路径 | 目标服务 |
 |---|---|
 | `/api/auth/**` | auth-service |
-| `/api/admin/**` | admin-service |
 | `/api/user/**` | user-service |
 | `/api/modules/**` | learning-service |
 | `/api/practice/**` | learning-service |
 | `/api/selected-readings/**` | learning-service |
 | `/api/shop/**` | shop-service |
+| `/api/admin/**` | admin-service |
+| `/api/rag/**` | rag-service |
 | `/swagger-ui/**`、`/swagger-ui.html` | learning-service |
 | `/v3/api-docs/auth` | auth-service OpenAPI |
-| `/v3/api-docs/admin` | admin-service OpenAPI |
 | `/v3/api-docs/user` | user-service OpenAPI |
 | `/v3/api-docs/learning` | learning-service OpenAPI |
 | `/v3/api-docs/shop` | shop-service OpenAPI |
+| `/v3/api-docs/admin` | admin-service OpenAPI |
+| `/v3/api-docs/rag` | rag-service OpenAPI |
 
-Gateway 当前还在重点接口上配置了令牌桶限流：
+Gateway 当前配置的重点限流：
 
 | 路径 | 限流对象 | replenishRate | burstCapacity |
 |---|---|---:|---:|
@@ -103,194 +127,55 @@ Gateway 当前还在重点接口上配置了令牌桶限流：
 | `/api/shop/orders` | 用户，拿不到用户时按 IP | 3 | 10 |
 | `/api/shop/**` | 用户，拿不到用户时按 IP | 10 | 30 |
 
-其中 `replenishRate` 表示每秒补充的令牌数，`burstCapacity` 表示令牌桶容量。超过限流阈值时 Gateway 返回 `HTTP 429 Too Many Requests`。
+## 数据库迁移
+
+数据库结构和基础数据由 `backend-services/migration-service` 统一维护：
+
+```text
+backend-services/migration-service/src/main/resources/db/migration/
+├── V1__init_schema.sql
+├── V2__seed_base_data.sql
+├── V3__admin_audit_risk_control.sql
+└── V4__rag_documents_chunks.sql
+```
+
+后端业务服务默认使用：
+
+```yaml
+spring.jpa.hibernate.ddl-auto: ${JPA_DDL_AUTO:validate}
+spring.sql.init.mode: never
+```
+
+开发和生产都应通过新增 Flyway 脚本演进数据库，不建议再依赖 JPA 自动改表。新增表、字段、索引或种子数据时，按 `V{版本号}__说明.sql` 命名。
 
 ## 环境要求
 
 - JDK 17+
 - Maven 3.6+
 - Node.js 18+
-- MySQL 8.x
-- Redis 6+
-- RabbitMQ 3.x
+- Docker / Docker Compose
+- MySQL 8
+- Redis Stack 7.2+
+- RabbitMQ 3
+- Elasticsearch 8
 
-## 数据库与中间件
+如果只使用 Docker Compose，本机不必单独安装 MySQL、Redis、RabbitMQ 和 Elasticsearch。
 
-### MySQL
+## 快速启动
 
-默认数据库名：
-
-```sql
-CREATE DATABASE english_learning DEFAULT CHARACTER SET utf8mb4;
-```
-
-默认连接配置使用环境变量兜底：
-
-```yaml
-spring:
-  datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/english_learning?...}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:123456}
-```
-
-各服务支持独立数据库变量：
-
-```text
-AUTH_DB_URL / AUTH_DB_USERNAME / AUTH_DB_PASSWORD
-USER_DB_URL / USER_DB_USERNAME / USER_DB_PASSWORD
-LEARNING_DB_URL / LEARNING_DB_USERNAME / LEARNING_DB_PASSWORD
-SHOP_DB_URL / SHOP_DB_USERNAME / SHOP_DB_PASSWORD
-ADMIN_DB_URL / ADMIN_DB_USERNAME / ADMIN_DB_PASSWORD
-```
-
-当前 JPA 使用：
-
-```yaml
-spring.jpa.hibernate.ddl-auto: validate
-spring.sql.init.mode: never
-```
-
-> 数据库表结构现在由 `backend-services/migration-service` 的 Flyway 脚本统一管理。新增字段、索引、表时，请新增 `V{版本号}__说明.sql`，不要依赖 JPA 自动改表。
-
-### Redis
-
-商城库存缓存、订单幂等、下单 token、Gateway 限流、商品布隆过滤器和空值缓存依赖 Redis。
-
-```text
-REDIS_HOST
-REDIS_PORT
-REDIS_PASSWORD
-REDIS_DATABASE
-```
-
-默认：`localhost:6379`。
-
-商城相关 Redis Key：
-
-| Key | 说明 |
-|---|---|
-| `shop:product:stock:{productId}` | 商品库存缓存 |
-| `shop:order:token:{userId}:{token}` | 后端签发的一次性下单 token |
-| `shop:order:idempotent:{userId}:{requestId}` | 订单幂等结果 |
-| `lock:shop:order:{userId}:{requestId}` | Redisson 下单分布式锁 |
-| `shop:product:bloom:active` | 当前商品布隆过滤器指针 |
-| `shop:product:bloom:a` / `shop:product:bloom:b` | 商品布隆过滤器双 Buffer |
-| `shop:product:null:{productId}` | 不存在或已下架商品的空值缓存 |
-
-商品缓存穿透防护流程：
-
-```text
-非法 productId 拦截
-  -> Redis Bitmap 布隆过滤器
-  -> 空值缓存
-  -> 数据库查询
-```
-
-布隆过滤器默认每 10 分钟重建一次，采用 `bloom:a` / `bloom:b` 双 Buffer 切换，避免重建期间短暂为空导致正常商品被误拦截。
-
-### RabbitMQ
-
-商城秒杀排队下单和订单超时取消依赖 RabbitMQ。
-
-```text
-RABBITMQ_HOST
-RABBITMQ_PORT
-RABBITMQ_USERNAME
-RABBITMQ_PASSWORD
-```
-
-默认：`localhost:5672`，`guest / guest`。
-
-订单超时时间：
-
-```text
-ORDER_TIMEOUT_MINUTES，默认 10 分钟
-```
-
-商城相关队列：
-
-| 队列 | 说明 |
-|---|---|
-| `english.shop.seckill.order.queue` | 秒杀订单创建队列，消费后写入订单表并扣减数据库库存 |
-| `english.shop.seckill.order.dlq` | 秒杀订单死信队列 |
-| `english.shop.order.delay.queue` | 订单超时延迟队列，消息等待 TTL 到期 |
-| `english.shop.order.timeout.queue` | 订单超时消费队列，取消未支付订单并回补库存 |
-
-秒杀下单流程：
-
-1. 前端先调用 `/api/shop/order-tokens` 获取一次性下单 token。
-2. 前端调用 `/api/shop/seckill-orders`，后端校验 token、Redis 预扣库存并把消息写入 RabbitMQ。
-3. 消费者监听 `english.shop.seckill.order.queue`，异步创建待支付订单。
-4. 前端轮询 `/api/shop/orders/result` 获取 `queued`、`success` 或 `failed` 状态。
-5. 订单创建成功后会继续写入超时取消队列；超时未支付会自动取消并回补库存。
-
-> `backend-services/shop-service` 和保留的单体后端 `backend-services/backend` 都包含商城 MQ 逻辑。
-
-普通同步下单兼容接口 `/api/shop/orders` 也使用同一套后端签发 token。`requestId` 字段当前保留，但含义已经变成“后端签发的下单幂等性 token”。
-
-订单防重复链路：
-
-```text
-Gateway 令牌桶限流
-  -> 后端签发幂等性 token
-  -> Redisson 分布式锁
-  -> Redis 幂等 key
-  -> 数据库唯一约束
-  -> 数据库原子扣库存
-```
-
-### Token 与 Gateway 统一认证
-
-Token 由 `auth-service` 登录成功后返回。`gateway` 使用相同密钥统一校验 `/api/**` 登录态，校验通过后向下游服务透传 `X-User-Id` 和 `X-Token-Expires-At`；`admin-service` 继续使用相同密钥校验后台 RBAC 权限：
-
-```text
-ADMIN_TOKEN_SECRET
-```
-
-生产环境必须确保 `auth-service`、`gateway`、`admin-service` 使用同一个 `ADMIN_TOKEN_SECRET`。
-
-## Docker Compose 启动（推荐容器化方式）
-
-项目根目录已提供 Docker 配置，可以一键启动 MySQL、Redis、RabbitMQ、后端微服务和前端。
-
-### 1. 启动
+推荐使用 Docker Compose 一次性启动全部依赖和服务：
 
 ```bash
 docker compose up --build
 ```
 
-后台运行：
+后台启动：
 
 ```bash
 docker compose up -d --build
 ```
 
-如果拉取 Docker Hub 镜像超时，可以临时指定可访问的镜像仓库地址。例如：
-
-```powershell
-$env:MAVEN_IMAGE='docker.1ms.run/library/maven:3.9.9-eclipse-temurin-17'
-$env:RUNTIME_IMAGE='docker.1ms.run/library/eclipse-temurin:17-jre-alpine'
-$env:NODE_IMAGE='docker.1ms.run/library/node:20-alpine'
-$env:MYSQL_IMAGE='docker.1ms.run/library/mysql:8.0'
-$env:REDIS_IMAGE='docker.1ms.run/library/redis:7-alpine'
-$env:RABBITMQ_IMAGE='docker.1ms.run/library/rabbitmq:3-management-alpine'
-docker compose up --build
-```
-
-Bash / Git Bash：
-
-```bash
-MAVEN_IMAGE=docker.1ms.run/library/maven:3.9.9-eclipse-temurin-17 \
-RUNTIME_IMAGE=docker.1ms.run/library/eclipse-temurin:17-jre-alpine \
-NODE_IMAGE=docker.1ms.run/library/node:20-alpine \
-MYSQL_IMAGE=docker.1ms.run/library/mysql:8.0 \
-REDIS_IMAGE=docker.1ms.run/library/redis:7-alpine \
-RABBITMQ_IMAGE=docker.1ms.run/library/rabbitmq:3-management-alpine \
-docker compose up --build
-```
-
-### 2. 访问地址
+常用访问地址：
 
 | 服务 | 地址 |
 |---|---|
@@ -298,414 +183,235 @@ docker compose up --build
 | Gateway / API | http://localhost:8081 |
 | Swagger UI | http://localhost:8081/swagger-ui/index.html |
 | RabbitMQ 管理台 | http://localhost:15672 |
+| Elasticsearch | http://localhost:9200 |
 
-RabbitMQ 默认账号密码为 `guest / guest`。
+Docker Compose 会等待 MySQL 健康检查通过，先运行 `migration-service`，迁移成功后再启动业务服务。
 
-### 3. 常用命令
+停止服务：
 
 ```bash
-# 查看容器状态
-docker compose ps
-
-# 查看所有服务日志
-docker compose logs -f
-
-# 查看单个服务日志，例如 gateway
-docker compose logs -f gateway
-
-# 停止并删除容器
 docker compose down
+```
 
-# 停止并删除容器，同时清空数据库 / Redis / RabbitMQ 数据卷
+如果要同时清除容器卷数据：
+
+```bash
 docker compose down -v
 ```
 
-### 4. 说明
+## 本地开发启动
 
-- MySQL 容器会创建 `english_learning` 数据库。
-- 后端服务复用现有环境变量配置：`DB_URL`、`REDIS_HOST`、`RABBITMQ_HOST`、`ADMIN_TOKEN_SECRET` 等。
-- Gateway 在容器网络中会转发到 `auth-service`、`user-service`、`learning-service`、`shop-service`、`admin-service`。
-- 前端容器通过 `VITE_API_TARGET=http://gateway:8081` 将 `/api`、Swagger 路径代理到 Gateway。
-- 当前 JPA 默认配置为 `ddl-auto: validate`，表结构由 `backend-services/migration-service` 的 Flyway 脚本维护；基础模块、角色权限、商城商品和精选读物 seed 数据写在版本化 SQL 中。
+先启动基础设施，可以只用 Compose 启动依赖：
 
-## 快速开始：微服务模式（推荐）
-
-### 1. 准备基础设施
-
-确保本地已启动：
-
-- MySQL
-- Redis
-- RabbitMQ
-
-创建数据库：
-
-```sql
-CREATE DATABASE english_learning DEFAULT CHARACTER SET utf8mb4;
+```bash
+docker compose up -d mysql redis rabbitmq elasticsearch
 ```
 
-### 2. 一键启动/关闭全部服务（Windows PowerShell）
-
-项目根目录提供了服务管理脚本：
-
-```text
-services.ps1
-```
-
-进入项目根目录：
+首次启动或数据库结构变化后，先执行迁移：
 
 ```powershell
-cd F:\idea_project\english_learning\english-learning
+cd backend-services/migration-service
+mvn spring-boot:run
 ```
 
-启动全部微服务和前端：
+然后在项目根目录启动各服务：
 
 ```powershell
 .\services.ps1 start
-```
-
-关闭全部服务：
-
-```powershell
+.\services.ps1 status
 .\services.ps1 stop
 ```
 
-重启全部服务：
+也可以单独启动某个服务：
 
 ```powershell
-.\services.ps1 restart
-```
-
-查看运行状态：
-
-```powershell
-.\services.ps1 status
-```
-
-如果 PowerShell 提示禁止运行脚本，可以临时使用：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\services.ps1 start
-```
-
-脚本会为每个服务打开独立 PowerShell 窗口，并在根目录生成临时 PID 文件：
-
-```text
-.service-pids.json
-```
-
-默认会启动：
-
-```text
-auth-service
-user-service
-learning-service
-shop-service
-admin-service
-gateway
-frontend
-```
-
-### 3. 手动启动后端服务
-
-也可以分别启动网关和各微服务。
-
-```bash
-cd backend-services/auth-service
-mvn spring-boot:run
-```
-
-```bash
-cd backend-services/user-service
-mvn spring-boot:run
-```
-
-```bash
-cd backend-services/learning-service
-mvn spring-boot:run
-```
-
-```bash
-cd backend-services/shop-service
-mvn spring-boot:run
-```
-
-```bash
-cd backend-services/admin-service
-mvn spring-boot:run
-```
-
-```bash
 cd backend-services/gateway
 mvn spring-boot:run
-```
 
-默认 API 入口：
-
-```text
-http://localhost:8081
-```
-
-### 4. 手动启动前端
-
-```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-前端默认运行在：
-
-```text
-http://localhost:3000
-```
-
-前端默认将 `/api` 代理到：
-
-```text
-http://localhost:8081
-```
-
-如需连接其他后端地址，可以通过环境变量覆盖：
-
-```bash
-VITE_API_TARGET=http://localhost:8081 npm run dev
-```
-
-Windows PowerShell：
+前端开发代理默认指向 `http://localhost:8081`。如需覆盖：
 
 ```powershell
 $env:VITE_API_TARGET = 'http://localhost:8081'
 npm run dev
 ```
 
-## 快速开始：单体模式
+## 核心环境变量
 
-如果只想启动一个后端服务，可以使用保留的单体后端：
+| 变量 | 说明 |
+|---|---|
+| `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` | MySQL 连接 |
+| `AUTH_DB_URL`、`USER_DB_URL`、`LEARNING_DB_URL`、`SHOP_DB_URL`、`ADMIN_DB_URL`、`RAG_DB_URL` | 各服务独立数据库连接覆盖 |
+| `JPA_DDL_AUTO` | JPA DDL 策略，默认 `validate` |
+| `REDIS_HOST`、`REDIS_PORT`、`REDIS_PASSWORD`、`REDIS_DATABASE` | Redis / Redis Stack |
+| `RABBITMQ_HOST`、`RABBITMQ_PORT`、`RABBITMQ_USERNAME`、`RABBITMQ_PASSWORD` | RabbitMQ |
+| `ELASTICSEARCH_URL` | 商品搜索 Elasticsearch 地址 |
+| `SHOP_SEARCH_ENABLED` | 是否启用商城 ES 搜索 |
+| `ADMIN_TOKEN_SECRET` | 登录 token HMAC 密钥，auth、gateway、admin 必须一致 |
+| `INTERNAL_GATEWAY_SECRET` | Gateway 与下游服务之间的内部访问密钥 |
+| `ORDER_TIMEOUT_MINUTES` | 待支付订单超时时间，默认 10 分钟 |
+| `RAG_CHAT_API_KEY`、`RAG_CHAT_BASE_URL`、`RAG_CHAT_MODEL` | RAG 对话模型配置 |
+| `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`RAG_EMBEDDING_MODEL` | RAG embedding 模型配置 |
+| `RAG_EMBEDDING_DIMENSION` | 向量维度，需与 embedding 模型和 Redis 向量索引一致 |
 
-```bash
-cd backend-services/backend
-mvn spring-boot:run
-```
+生产环境必须显式设置 `ADMIN_TOKEN_SECRET`、`INTERNAL_GATEWAY_SECRET` 和所有模型 API Key，不要使用代码或 Compose 中的开发兜底值。
 
-单体后端默认端口：
+## 商城链路
 
-```text
-http://localhost:8081
-```
+### 商品搜索
 
-前端需要将代理目标指向单体后端：
+`GET /api/shop/products/search?keyword=...`
 
-```bash
-cd frontend
-VITE_API_TARGET=http://localhost:8081 npm run dev
-```
-
-## 构建
-
-### 后端构建
-
-```bash
-mvn -q -DskipTests package -f backend-services/gateway/pom.xml
-mvn -q -DskipTests package -f backend-services/auth-service/pom.xml
-mvn -q -DskipTests package -f backend-services/user-service/pom.xml
-mvn -q -DskipTests package -f backend-services/learning-service/pom.xml
-mvn -q -DskipTests package -f backend-services/shop-service/pom.xml
-mvn -q -DskipTests package -f backend-services/admin-service/pom.xml
-```
-
-单体后端：
-
-```bash
-mvn -q -DskipTests package -f backend-services/backend/pom.xml
-```
-
-### 前端构建
-
-```bash
-cd frontend
-npm run build
-```
-
-构建产物输出到：
+搜索流程：
 
 ```text
-frontend/dist
+前端关键词
+  -> Gateway
+  -> shop-service
+  -> Redis 搜索缓存
+  -> Elasticsearch 商品索引
+  -> 失败或无结果时回退 MySQL 查询
+  -> MySQL 商品详情 + Redis 库存同步
 ```
 
-## Swagger / OpenAPI
+`shop-service` 启动时会重建 `shop_products` 索引，并在商品展示前同步 Redis 中的库存状态。
 
-启动 gateway、learning-service 和需要查看的业务服务后访问：
+### 同步下单
+
+```text
+POST /api/shop/order-tokens
+POST /api/shop/orders
+POST /api/shop/orders/{orderId}/pay
+GET  /api/shop/orders
+```
+
+下单前必须先申请一次性 token。业务身份来自 Gateway 注入的 `X-User-Id`，前端不再需要传可信 `userId`。
+
+### 秒杀下单
+
+```text
+POST /api/shop/order-tokens
+POST /api/shop/seckill-orders
+GET  /api/shop/orders/result?requestId=...
+```
+
+秒杀链路：
+
+```text
+Gateway 限流
+  -> 后端校验一次性 token
+  -> Redis 预扣库存
+  -> RabbitMQ 排队
+  -> 消费者创建订单并扣减数据库库存
+  -> 前端轮询结果
+  -> TTL / 死信队列取消超时未支付订单
+```
+
+## RAG 知识库
+
+`rag-service` 提供以下接口：
+
+| 接口 | 说明 |
+|---|---|
+| `POST /api/rag/documents` | 文本资料入库 |
+| `POST /api/rag/documents/upload` | PDF、DOCX、DOC 文件入库 |
+| `GET /api/rag/documents` | 查询已入库资料 |
+| `POST /api/rag/search` | 检索知识库片段 |
+| `POST /api/rag/ask` | 普通知识库问答 |
+| `POST /api/rag/ask/stream` | SSE 流式知识库问答 |
+
+数据落点：
+
+- MySQL 保存 `rag_documents` 和 `rag_document_chunks`。
+- Redis Stack / RediSearch 保存 chunk 向量。
+- 前端 `FloatingRagChat.vue` 提供普通用户悬浮问答入口。
+- 后台 `RagAdminPanel.vue` 提供资料入库、检索和问答管理入口。
+
+## 后台管理和审计
+
+后台入口：`/admin`。
+
+后台接口统一走 `/api/admin/**`，由 Gateway 校验登录态，再由 `admin-service` 校验角色权限。管理员敏感操作会：
+
+- 要求前端传入 `confirmText: "CONFIRM"`。
+- 使用 `@AdminAudit` 记录操作日志。
+- 对权限变更记录前后权限集合。
+- 禁止删除或破坏系统内置角色、系统内置模块。
+- 用户删除当前实现为禁用用户，而不是物理删除。
+
+审计接口：
+
+```text
+GET /api/admin/audit/operations
+GET /api/admin/audit/permission-changes
+```
+
+## 测试数据清理
+
+仓库提供测试数据清理脚本：
+
+```text
+docs/sql/cleanup-test-data.sql
+```
+
+该脚本会删除名称中包含 `TEST`、`STRESS`、`IDEMPOTENCY`、`REDISSON`、`SERVER_TOKEN` 等标记的测试用户、商品和订单。执行前请确认当前数据库环境，生产库禁止直接运行。
+
+## 当前企业级完成度
+
+已具备：
+
+- 微服务拆分、统一 Gateway、统一认证、内部网关密钥。
+- Flyway 数据库迁移和基础数据 seed。
+- Redis、RabbitMQ、Elasticsearch、Redis Stack 等中间件集成。
+- 商城并发控制、幂等、防超卖、订单超时取消。
+- 后台 RBAC、敏感操作确认、审计日志。
+- RAG 文档入库、向量检索、流式问答。
+- Docker Compose 本地编排。
+
+仍建议补齐：
+
+- 自动化测试：后端单元测试、集成测试、并发下单测试、前端组件测试。
+- CI/CD：构建、测试、镜像扫描、部署流水线。
+- 生产配置：独立 profile、密钥管理、关闭默认密钥、收紧 CORS。
+- 可观测性：traceId、结构化日志、Prometheus 指标、告警、慢 SQL 和 MQ 堆积监控。
+- 接口规范：统一异常处理、统一错误码、DTO 参数校验全覆盖。
+- 文档治理：OpenAPI 聚合页、部署手册、故障排查手册、容量压测报告。
+
+## 常见问题
+
+### Swagger 打不开
+
+确认访问的是 Gateway：
 
 ```text
 http://localhost:8081/swagger-ui/index.html
 ```
 
-Swagger UI 可切换：
+并确认 `learning-service` 和 Gateway 都已启动。
 
-- 认证服务：`/v3/api-docs/auth`
-- 后台管理服务：`/v3/api-docs/admin`
-- 用户服务：`/v3/api-docs/user`
-- 学习服务：`/v3/api-docs/learning`
-- 商城服务：`/v3/api-docs/shop`
+### 业务服务返回“请通过网关访问”
 
-登录接口位于“认证服务”：
+这是下游服务的内部网关保护生效。请通过 `http://localhost:8081/api/...` 访问，不要直接访问业务服务端口。
 
-```text
-POST /api/auth/login
-POST /api/auth/register
-```
+### RAG 搜索无结果
 
-后台管理接口位于“后台管理服务”。
+检查：
 
-## API 概览
+- Redis 使用的是 Redis Stack 镜像。
+- `RAG_EMBEDDING_DIMENSION` 与 embedding 模型输出维度一致。
+- 已通过 `/api/rag/documents` 或 `/api/rag/documents/upload` 完成资料入库。
+- RAG 模型和 embedding API Key 已正确注入。
 
-所有接口统一返回 `ApiResult` 结构：
+### 商城搜索无结果
 
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {}
-}
-```
+检查：
 
-### 认证 `/api/auth`
+- Elasticsearch 已启动并通过 `http://localhost:9200` 健康检查。
+- `shop-service` 启动日志中没有索引重建失败。
+- `SHOP_SEARCH_ENABLED` 未被设置为 `false`。
+- 关键词无 ES 命中时，会尝试回退 MySQL 模糊查询。
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/login` | 登录 |
-| POST | `/register` | 注册 |
-
-### 模块 `/api/modules`
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/` | 获取全部模块，含考试倒计时 |
-| GET | `/{code}` | 按 code 获取模块 |
-
-### 练习 `/api/practice`
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/words/{moduleCode}` | 按模块获取单词 |
-| GET | `/words/daily?userId=` | 获取每日单词 |
-| GET | `/readings/{moduleCode}` | 按模块获取阅读 |
-| GET | `/listenings/{moduleCode}` | 按模块获取听力 |
-
-### 用户 `/api/user`
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| PUT | `/profile` | 修改资料和每日单词目标 |
-| POST | `/wrong-records` | 提交错题记录 |
-| GET | `/wrong-records?userId=` | 获取错题列表 |
-| DELETE | `/wrong-records/{wrongRecordId}?userId=` | 删除错题 |
-| POST | `/favorites` | 添加阅读收藏 |
-| DELETE | `/favorites/{readingId}?userId=` | 取消阅读收藏 |
-| GET | `/favorites?userId=` | 获取收藏列表 |
-| GET | `/favorites/check?userId=&readingId=` | 查询是否已收藏 |
-| POST | `/word-progress/known` | 标记单词认识 |
-| POST | `/word-progress/reset` | 重置单词进度 |
-| GET | `/word-progress/review?userId=` | 获取复习单词 |
-
-### 精选读物 `/api/selected-readings`
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/` | 获取精选读物 |
-| POST | `/favorites` | 收藏精选读物 |
-| DELETE | `/favorites/{selectedReadingId}?userId=` | 取消收藏 |
-| GET | `/favorites?userId=` | 获取精选读物收藏 |
-
-### 商城 `/api/shop`
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/products` | 获取商品列表 |
-| POST | `/order-tokens` | 申请一次性下单 token |
-| POST | `/seckill-orders` | 秒杀下单入队，返回排队状态 |
-| GET | `/orders/result?userId=&requestId=` | 查询秒杀下单结果 |
-| POST | `/orders` | 创建订单（同步兼容接口） |
-| GET | `/orders?userId=&status=` | 查询用户订单 |
-| POST | `/orders/{orderId}/pay` | 模拟支付订单 |
-
-### 后台管理 `/api/admin`
-
-> 后台接口由 `admin-service` 提供，需要 `Authorization: Bearer <token>`。
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/orders` | 查询全部订单 |
-| PUT | `/orders/{orderId}/status` | 更新订单状态 |
-| GET | `/modules` | 查询全部模块 |
-| POST | `/modules` | 新建模块 |
-| PUT | `/modules/{moduleId}` | 更新模块 |
-| DELETE | `/modules/{moduleId}` | 删除模块 |
-| GET | `/users` | 查询用户 |
-| PUT | `/users/{userId}/role` | 分配用户角色 |
-| DELETE | `/users/{userId}` | 删除用户 |
-| GET | `/roles` | 查询角色 |
-| POST | `/roles` | 创建角色 |
-| PUT | `/roles/{roleId}` | 更新角色 |
-| DELETE | `/roles/{roleId}` | 删除角色 |
-| GET | `/permissions` | 查询权限 |
-| GET | `/roles/{roleId}/permissions` | 查询角色权限 |
-| PUT | `/roles/{roleId}/permissions` | 分配角色权限 |
-
-## 后台权限说明
-
-当前后台采用 RBAC 权限模型：
-
-- `ADMIN_DASHBOARD`：后台入口权限
-- `ORDER_MANAGE`：订单管理
-- `MODULE_MANAGE`：模块管理
-- `USER_MANAGE`：用户管理
-- `ROLE_MANAGE`：角色管理
-- `PERMISSION_MANAGE`：权限管理
-
-## 安全与配置建议
-
-- 不要在生产环境使用默认数据库密码、RabbitMQ 密码或 Token 密钥。
-- Gateway 默认会校验除登录、注册、健康检查和 Swagger/OpenAPI 之外的 `/api/**` 请求。
-- 业务服务应逐步改为信任 Gateway 透传的 `X-User-Id`，不要信任前端传入的 `userId`。
-- 生产环境应通过环境变量设置：
-  - `DB_URL`
-  - `DB_USERNAME`
-  - `DB_PASSWORD`
-  - `ADMIN_TOKEN_SECRET`
-  - `REDIS_*`
-  - `RABBITMQ_*`
-- 如果使用 AI 相关配置，API Key 必须通过环境变量注入，不应提交到仓库。
-- 普通用户接口当前仍大量使用请求中的 `userId`，后续建议统一从 Gateway 透传的 `X-User-Id` 解析当前用户身份。
-
-## 微服务认证设计文档
-
-具体认证链路、Gateway 过滤器、放行路径和后续授权演进说明见：
-
-```text
-docs/microservice-auth-design.md
-```
-
-## 项目分析文档
-
-更详细的架构分析、风险点和优化建议见：
-
-```text
-PROJECT_ANALYSIS.md
-```
-
-## 专题文档
-
-最近补充的核心专题文档：
-
-| 文档 | 说明 |
-|---|---|
-| `docs/interview-study-guide.md` | 项目学习与面试重点总览 |
-| `docs/microservice-auth-design.md` | 微服务认证和 Gateway 统一鉴权设计 |
-| `docs/gateway-rate-limit-report.md` | Gateway 令牌桶限流说明和测试结果 |
-| `docs/order-idempotency-test-report.md` | 订单幂等性压测报告 |
-| `docs/order-redisson-lock-report.md` | Redisson 分布式锁引入说明 |
-| `docs/order-server-token-report.md` | 后端签发下单幂等性 token 说明 |
-| `docs/order-stress-test-report.md` | 订单高并发压测报告 |
-| `docs/shop-cache-penetration-report.md` | 商城缓存穿透防护说明 |
