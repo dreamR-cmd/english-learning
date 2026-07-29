@@ -1,22 +1,16 @@
-server:
-  port: ${AUTH_SERVICE_PORT:8087}
 spring:
   application:
     name: auth-service
-  datasource:
-    url: ${AUTH_DB_URL:${DB_URL:jdbc:mysql://localhost:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true}}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${AUTH_DB_USERNAME:${DB_USERNAME:root}}
-    password: ${AUTH_DB_PASSWORD:${DB_PASSWORD:123456}}
-  jpa:
-    hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:validate}
-    show-sql: false
-    database-platform: org.hibernate.dialect.MySQLDialect
-  sql:
-    init:
-      mode: never
-
-admin:
-  token:
-    secret: ${ADMIN_TOKEN_SECRET:english-learning-admin-secret}
+  config:
+    import:
+      - optional:nacos:english-learning-common.yaml?group=${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+      - optional:nacos:auth-service.yaml?group=${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        group: ${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+        file-extension: yaml
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}

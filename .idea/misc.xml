@@ -17,6 +17,7 @@
         <option value="$PROJECT_DIR$/backend-services/rag-service/pom.xml" />
         <option value="$PROJECT_DIR$/rag-service/pom.xml" />
         <option value="$PROJECT_DIR$/backend-services/migration-service/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

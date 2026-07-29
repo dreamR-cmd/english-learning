@@ -1,0 +1,19 @@
+server:
+  port: ${LEARNING_SERVICE_PORT:8089}
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: auth-service
+        url: /v3/api-docs/auth
+      - name: admin-service
+        url: /v3/api-docs/admin
+      - name: user-service
+        url: /v3/api-docs/user
+      - name: learning-service
+        url: /v3/api-docs/learning
+      - name: shop-service
+        url: /v3/api-docs/shop
+      - name: rag-service
+        url: /v3/api-docs/rag
+    urls-primary-name: learning-service

@@ -1,0 +1,2 @@
+server:
+  port: ${ADMIN_SERVICE_PORT:8091}

@@ -1,0 +1,2 @@
+server:
+  port: ${AUTH_SERVICE_PORT:8087}

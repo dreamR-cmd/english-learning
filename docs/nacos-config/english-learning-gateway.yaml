@@ -1,0 +1,137 @@
+server:
+  port: ${GATEWAY_PORT:8081}
+
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Allow-Headers Access-Control-Allow-Methods, RETAIN_FIRST
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: "*"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowed-headers: "*"
+            allow-credentials: true
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URI:lb://auth-service}
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+        - id: admin-service
+          uri: ${ADMIN_SERVICE_URI:lb://admin-service}
+          predicates:
+            - Path=/api/admin/**
+        - id: user-service
+          uri: ${USER_SERVICE_URI:lb://user-service}
+          predicates:
+            - Path=/api/user/**
+        - id: learning-service
+          uri: ${LEARNING_SERVICE_URI:lb://learning-service}
+          predicates:
+            - Path=/api/modules/**,/api/practice/**,/api/selected-readings/**
+        - id: rag-service
+          uri: ${RAG_SERVICE_URI:lb://rag-service}
+          predicates:
+            - Path=/api/rag/**
+        - id: shop-order-service
+          uri: ${SHOP_SERVICE_URI:lb://shop-service}
+          predicates:
+            - Path=/api/shop/orders
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: 3
+                redis-rate-limiter.burstCapacity: 10
+                redis-rate-limiter.requestedTokens: 1
+        - id: shop-service
+          uri: ${SHOP_SERVICE_URI:lb://shop-service}
+          predicates:
+            - Path=/api/shop/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 30
+                redis-rate-limiter.requestedTokens: 1
+        - id: auth-service-openapi
+          uri: ${AUTH_SERVICE_URI:lb://auth-service}
+          predicates:
+            - Path=/v3/api-docs/auth
+          filters:
+            - SetPath=/v3/api-docs
+        - id: user-service-openapi
+          uri: ${USER_SERVICE_URI:lb://user-service}
+          predicates:
+            - Path=/v3/api-docs/user
+          filters:
+            - SetPath=/v3/api-docs
+        - id: admin-service-openapi
+          uri: ${ADMIN_SERVICE_URI:lb://admin-service}
+          predicates:
+            - Path=/v3/api-docs/admin
+          filters:
+            - SetPath=/v3/api-docs
+        - id: learning-service-openapi
+          uri: ${LEARNING_SERVICE_URI:lb://learning-service}
+          predicates:
+            - Path=/v3/api-docs/learning
+          filters:
+            - SetPath=/v3/api-docs
+        - id: shop-service-openapi
+          uri: ${SHOP_SERVICE_URI:lb://shop-service}
+          predicates:
+            - Path=/v3/api-docs/shop
+          filters:
+            - SetPath=/v3/api-docs
+        - id: rag-service-openapi
+          uri: ${RAG_SERVICE_URI:lb://rag-service}
+          predicates:
+            - Path=/v3/api-docs/rag
+          filters:
+            - SetPath=/v3/api-docs
+        - id: english-learning-swagger
+          uri: ${LEARNING_SERVICE_URI:lb://learning-service}
+          predicates:
+            - Path=/swagger-ui/**,/swagger-ui.html,/v3/**
+
+gateway:
+  auth:
+    enabled: true
+    exclude-paths:
+      - /api/auth/login
+      - /api/auth/register
+      - /actuator/health
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /v3/api-docs/**
+      - /v3/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    gateway:
+      enabled: true

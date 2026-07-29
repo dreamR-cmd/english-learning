@@ -1,49 +1,16 @@
-server:
-  port: ${SHOP_SERVICE_PORT:8090}
 spring:
   application:
     name: shop-service
-  datasource:
-    url: ${SHOP_DB_URL:${DB_URL:jdbc:mysql://localhost:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true}}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${SHOP_DB_USERNAME:${DB_USERNAME:root}}
-    password: ${SHOP_DB_PASSWORD:${DB_PASSWORD:123456}}
-  jpa:
-    hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:validate}
-    show-sql: false
-    database-platform: org.hibernate.dialect.MySQLDialect
-  sql:
-    init:
-      mode: never
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      database: ${REDIS_DATABASE:0}
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
-    listener:
-      simple:
-        retry:
-          enabled: true
-          initial-interval: 1000
-          max-attempts: 3
-
-shop:
-  order:
-    timeout-minutes: ${ORDER_TIMEOUT_MINUTES:10}
-  search:
-    enabled: ${SHOP_SEARCH_ENABLED:true}
-    elasticsearch-url: ${ELASTICSEARCH_URL:http://localhost:9200}
-    index-name: ${SHOP_PRODUCT_INDEX:shop_products}
-    cache-ttl-seconds: ${SHOP_SEARCH_CACHE_TTL_SECONDS:300}
-    max-results: ${SHOP_SEARCH_MAX_RESULTS:50}
-
-admin:
-  token:
-    secret: ${ADMIN_TOKEN_SECRET:english-learning-admin-secret}
+  config:
+    import:
+      - optional:nacos:english-learning-common.yaml?group=${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+      - optional:nacos:shop-service.yaml?group=${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        group: ${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+        file-extension: yaml
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}

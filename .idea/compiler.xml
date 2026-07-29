@@ -15,6 +15,7 @@
         <module name="english-learning" />
         <module name="shop-service" />
         <module name="learning-service" />
+        <module name="shop-service (1)" />
         <module name="user-service" />
         <module name="migration-service" />
         <module name="commons-io" />
@@ -26,6 +27,7 @@
       <module name="maven-archiver" target="1.5" />
       <module name="rag-service" target="17" />
       <module name="rag-services" target="1.5" />
+      <module name="shop-service (1)" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
@@ -38,6 +40,7 @@
       <module name="migration-service" options="-parameters" />
       <module name="rag-service" options="-parameters" />
       <module name="shop-service" options="-parameters" />
+      <module name="shop-service (1)" options="-parameters" />
       <module name="user-service" options="-parameters" />
     </option>
   </component>

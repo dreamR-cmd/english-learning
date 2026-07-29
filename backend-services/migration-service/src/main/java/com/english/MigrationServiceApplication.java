@@ -13,13 +13,13 @@ import java.util.Arrays;
 public class MigrationServiceApplication implements CommandLineRunner {
     private final ConfigurableApplicationContext context;
 
-    @Value("${migration.datasource.url}")
+    @Value("${migration.datasource.url:${DB_URL:jdbc:mysql://localhost:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true}}")
     private String datasourceUrl;
 
-    @Value("${migration.datasource.username}")
+    @Value("${migration.datasource.username:${DB_USERNAME:root}}")
     private String datasourceUsername;
 
-    @Value("${migration.datasource.password}")
+    @Value("${migration.datasource.password:${DB_PASSWORD:123456}}")
     private String datasourcePassword;
 
     @Value("${migration.locations:classpath:db/migration}")

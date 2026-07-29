@@ -1,39 +1,16 @@
-server:
-  port: ${LEARNING_SERVICE_PORT:8089}
 spring:
   application:
     name: learning-service
-  datasource:
-    url: ${LEARNING_DB_URL:${DB_URL:jdbc:mysql://localhost:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true}}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${LEARNING_DB_USERNAME:${DB_USERNAME:root}}
-    password: ${LEARNING_DB_PASSWORD:${DB_PASSWORD:123456}}
-  jpa:
-    hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:validate}
-    show-sql: false
-    database-platform: org.hibernate.dialect.MySQLDialect
-  sql:
-    init:
-      mode: never
-
-admin:
-  token:
-    secret: ${ADMIN_TOKEN_SECRET:english-learning-admin-secret}
-
-springdoc:
-  swagger-ui:
-    urls:
-      - name: 认证服务
-        url: /v3/api-docs/auth
-      - name: 后台管理服务
-        url: /v3/api-docs/admin
-      - name: 用户服务
-        url: /v3/api-docs/user
-      - name: 学习服务
-        url: /v3/api-docs/learning
-      - name: 商城服务
-        url: /v3/api-docs/shop
-      - name: RAG 服务
-        url: /v3/api-docs/rag
-    urls-primary-name: 学习服务
+  config:
+    import:
+      - optional:nacos:english-learning-common.yaml?group=${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+      - optional:nacos:learning-service.yaml?group=${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        group: ${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+        file-extension: yaml
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}

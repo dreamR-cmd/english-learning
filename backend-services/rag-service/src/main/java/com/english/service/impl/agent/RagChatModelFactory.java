@@ -12,9 +12,9 @@ public class RagChatModelFactory {
     private final String baseUrl;
 
     public RagChatModelFactory(
-            @Value("${rag.chat.api-key:sk-312e8115d128601865a1cb57dbae20a41762d5484ef14f3d18dc048931a42f04}") String apiKey,
-            @Value("${rag.chat.model-name:gpt-5.5}") String modelName,
-            @Value("${rag.chat.base-url:https://sub2api.sxlx.tech/v1}") String baseUrl) {
+            @Value("${rag.chat.api-key:}") String apiKey,
+            @Value("${rag.chat.model-name:gpt-4o-mini}") String modelName,
+            @Value("${rag.chat.base-url:https://api.openai.com/v1}") String baseUrl) {
         this.apiKey = apiKey;
         this.modelName = modelName;
         this.baseUrl = baseUrl;

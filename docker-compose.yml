@@ -8,6 +8,8 @@ x-backend-env: &backend-env
   REDIS_PORT: "6379"
   REDIS_PASSWORD: ""
   REDIS_DATABASE: "0"
+  NACOS_SERVER_ADDR: host.docker.internal:8848
+  NACOS_CONFIG_GROUP: DEFAULT_GROUP
   RABBITMQ_HOST: rabbitmq
   RABBITMQ_PORT: "5672"
   RABBITMQ_USERNAME: guest
@@ -101,6 +103,8 @@ services:
       DB_URL: jdbc:mysql://mysql:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true
       DB_USERNAME: root
       DB_PASSWORD: "123456"
+      NACOS_SERVER_ADDR: host.docker.internal:8848
+      NACOS_CONFIG_GROUP: DEFAULT_GROUP
       MIGRATION_BASELINE_ON_MIGRATE: "true"
     depends_on:
       mysql:
@@ -241,8 +245,6 @@ services:
       <<: *backend-env
       RAG_SERVICE_PORT: "8092"
       RAG_MAX_RESULTS: "5"
-      RAG_USER_SERVICE_URL: http://user-service:8088
-      RAG_LEARNING_SERVICE_URL: http://learning-service:8089
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       RAG_EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL:-text-embedding-3-small}
@@ -269,12 +271,14 @@ services:
         SERVICE_DIR: backend-services/gateway
     environment:
       GATEWAY_PORT: "8081"
-      AUTH_SERVICE_URI: http://auth-service:8087
-      USER_SERVICE_URI: http://user-service:8088
-      LEARNING_SERVICE_URI: http://learning-service:8089
-      SHOP_SERVICE_URI: http://shop-service:8090
-      ADMIN_SERVICE_URI: http://admin-service:8091
-      RAG_SERVICE_URI: http://rag-service:8092
+      NACOS_SERVER_ADDR: host.docker.internal:8848
+      NACOS_CONFIG_GROUP: DEFAULT_GROUP
+      AUTH_SERVICE_URI: lb://auth-service
+      USER_SERVICE_URI: lb://user-service
+      LEARNING_SERVICE_URI: lb://learning-service
+      SHOP_SERVICE_URI: lb://shop-service
+      ADMIN_SERVICE_URI: lb://admin-service
+      RAG_SERVICE_URI: lb://rag-service
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_PASSWORD: ""
