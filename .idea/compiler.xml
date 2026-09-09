@@ -10,15 +10,16 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="english-learning-gateway" />
-        <module name="auth-service" />
         <module name="commons-io (1)" />
-        <module name="english-learning" />
+        <module name="commons-io (2)" />
         <module name="shop-service" />
         <module name="learning-service" />
         <module name="shop-service (1)" />
         <module name="user-service" />
         <module name="migration-service" />
         <module name="commons-io" />
+        <module name="auth-service" />
+        <module name="english-learning" />
         <module name="admin-service" />
         <module name="rag-services" />
       </profile>

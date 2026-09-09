@@ -8,7 +8,7 @@ x-backend-env: &backend-env
   REDIS_PORT: "6379"
   REDIS_PASSWORD: ""
   REDIS_DATABASE: "0"
-  NACOS_SERVER_ADDR: host.docker.internal:8848
+  NACOS_SERVER_ADDR: nacos:8848
   NACOS_CONFIG_GROUP: DEFAULT_GROUP
   RABBITMQ_HOST: rabbitmq
   RABBITMQ_PORT: "5672"
@@ -91,6 +91,32 @@ services:
     networks:
       - english-learning
 
+  nacos:
+    image: ${NACOS_IMAGE:-nacos/nacos-server:v2.5.3}
+    environment:
+      MODE: standalone
+      NACOS_APPLICATION_PORT: "8848"
+      NACOS_AUTH_ENABLE: "false"
+      JVM_XMS: 256m
+      JVM_XMX: 512m
+      JVM_XMN: 128m
+      TZ: Asia/Shanghai
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    volumes:
+      - nacos_data:/home/nacos/data
+      - nacos_logs:/home/nacos/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - english-learning
+
   migration-service:
     build:
       context: .
@@ -103,11 +129,13 @@ services:
       DB_URL: jdbc:mysql://mysql:3306/english_learning?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&createDatabaseIfNotExist=true
       DB_USERNAME: root
       DB_PASSWORD: "123456"
-      NACOS_SERVER_ADDR: host.docker.internal:8848
+      NACOS_SERVER_ADDR: nacos:8848
       NACOS_CONFIG_GROUP: DEFAULT_GROUP
       MIGRATION_BASELINE_ON_MIGRATE: "true"
     depends_on:
       mysql:
+        condition: service_healthy
+      nacos:
         condition: service_healthy
     networks:
       - english-learning
@@ -127,6 +155,8 @@ services:
       - "8087"
     depends_on:
       mysql:
+        condition: service_healthy
+      nacos:
         condition: service_healthy
       migration-service:
         condition: service_completed_successfully
@@ -157,6 +187,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      nacos:
+        condition: service_healthy
       migration-service:
         condition: service_completed_successfully
     networks:
@@ -177,6 +209,8 @@ services:
       - "8089"
     depends_on:
       mysql:
+        condition: service_healthy
+      nacos:
         condition: service_healthy
       migration-service:
         condition: service_completed_successfully
@@ -200,6 +234,8 @@ services:
       - "8090"
     depends_on:
       mysql:
+        condition: service_healthy
+      nacos:
         condition: service_healthy
       migration-service:
         condition: service_completed_successfully
@@ -228,6 +264,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      nacos:
+        condition: service_healthy
       migration-service:
         condition: service_completed_successfully
     networks:
@@ -254,6 +292,10 @@ services:
     - "8092:8092"     # 业务端口，如果之前是靠网关统一对外暴露，这里也可以按需保留expose
     - "5006:5006"
     depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
       migration-service:
         condition: service_completed_successfully
       redis:
@@ -271,7 +313,7 @@ services:
         SERVICE_DIR: backend-services/gateway
     environment:
       GATEWAY_PORT: "8081"
-      NACOS_SERVER_ADDR: host.docker.internal:8848
+      NACOS_SERVER_ADDR: nacos:8848
       NACOS_CONFIG_GROUP: DEFAULT_GROUP
       AUTH_SERVICE_URI: lb://auth-service
       USER_SERVICE_URI: lb://user-service
@@ -288,6 +330,7 @@ services:
     ports:
       - "8081:8081"
     depends_on:
+      - nacos
       - auth-service
       - user-service
       - learning-service
@@ -320,6 +363,8 @@ volumes:
   redis_data:
   rabbitmq_data:
   elasticsearch_data:
+  nacos_data:
+  nacos_logs:
 
 networks:
   english-learning:
