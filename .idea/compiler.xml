@@ -18,6 +18,7 @@
         <module name="user-service" />
         <module name="migration-service" />
         <module name="commons-io" />
+        <module name="rag-service" />
         <module name="auth-service" />
         <module name="english-learning" />
         <module name="admin-service" />
@@ -26,7 +27,6 @@
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="maven-archiver" target="1.5" />
-      <module name="rag-service" target="17" />
       <module name="rag-services" target="1.5" />
       <module name="shop-service (1)" target="17" />
     </bytecodeTargetLevel>

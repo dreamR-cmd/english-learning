@@ -22,7 +22,6 @@
     </option>
     <option name="ignoredFiles">
       <set>
-        <option value="$PROJECT_DIR$/backend-services/rag-service/pom.xml" />
         <option value="$PROJECT_DIR$/rag-service/pom.xml" />
         <option value="$PROJECT_DIR$/rag-services/pom.xml" />
       </set>
