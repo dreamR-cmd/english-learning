@@ -31,20 +31,30 @@ public class AdminAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        String authorization = request.getHeader("Authorization");
+        String token = authorization != null && authorization.startsWith("Bearer ")
+                ? authorization.substring(7)
+                : null;
+
+        User user;
         try {
-            String authorization = request.getHeader("Authorization");
-            String token = authorization != null && authorization.startsWith("Bearer ")
-                    ? authorization.substring(7)
-                    : null;
-            User user = tokenService.validateToken(token);
-            String requiredPermission = resolvePermission(request);
-            if (requiredPermission != null && !tokenService.hasPermission(user, requiredPermission)) {
-                writeError(response, HttpServletResponse.SC_FORBIDDEN, "没有后台权限");
-                return;
-            }
-            filterChain.doFilter(request, response);
+            user = tokenService.validateToken(token);
         } catch (Exception error) {
             writeError(response, HttpServletResponse.SC_UNAUTHORIZED, error.getMessage());
+            return;
+        }
+
+        String requiredPermission = resolvePermission(request);
+        if (requiredPermission != null && !tokenService.hasPermission(user, requiredPermission)) {
+            writeError(response, HttpServletResponse.SC_FORBIDDEN, "没有后台权限");
+            return;
+        }
+
+        try {
+            AdminAuthContext.set(user);
+            filterChain.doFilter(request, response);
+        } finally {
+            AdminAuthContext.clear();
         }
     }
 
@@ -57,6 +67,7 @@ public class AdminAuthFilter extends OncePerRequestFilter {
         mapping.put("/api/admin/users", "USER_MANAGE");
         mapping.put("/api/admin/roles", "ROLE_MANAGE");
         mapping.put("/api/admin/permissions", "PERMISSION_MANAGE");
+        mapping.put("/api/admin/audit", "AUDIT_LOGS");
         for (Map.Entry<String, String> entry : mapping.entrySet()) {
             if (uri.startsWith(entry.getKey())) {
                 if (uri.contains("/roles/") && uri.endsWith("/permissions") && !"GET".equals(method)) {

@@ -1,7 +1,11 @@
 package com.english.controller;
 
+import com.english.config.AdminAudit;
+import com.english.dto.AdminConfirmRequest;
 import com.english.dto.ApiResult;
+import com.english.entity.AdminOperationLog;
 import com.english.entity.AdminPermission;
+import com.english.entity.AdminPermissionChangeLog;
 import com.english.entity.AdminRole;
 import com.english.entity.ExamModule;
 import com.english.entity.ShopOrder;
@@ -21,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
-@Tag(name = "后台管理接口", description = "后台订单、模块、用户、角色和权限管理接口")
+@Tag(name = "Admin Management")
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
@@ -31,107 +35,124 @@ public class AdminController {
         this.adminService = adminService;
     }
 
-    @Operation(summary = "查询全部订单", description = "后台查询所有用户订单。")
     @GetMapping("/orders")
     public ApiResult<List<ShopOrder>> getOrders() {
         return ApiResult.success(adminService.getOrders());
     }
 
-    @Operation(summary = "更新订单状态", description = "后台更新订单状态，status 可用 pending、paid、canceled。")
+    @Operation(summary = "Update order status")
     @PutMapping("/orders/{orderId}/status")
+    @AdminAudit(module = "ORDER", action = "UPDATE_STATUS", targetId = "#orderId")
     public ApiResult<ShopOrder> updateOrderStatus(@PathVariable Long orderId, @RequestBody Map<String, String> body) {
-        return ApiResult.success(adminService.updateOrderStatus(orderId, body.get("status")));
+        return ApiResult.success(adminService.updateOrderStatus(orderId, body.get("status"), body.get("confirmText")));
     }
 
-    @Operation(summary = "后台查询全部模块", description = "查询所有考试模块，用于后台模块管理。")
     @GetMapping("/modules")
     public ApiResult<List<ExamModule>> getModules() {
         return ApiResult.success(adminService.getModules());
     }
 
-    @Operation(summary = "新建模块", description = "后台新增考试模块。")
     @PostMapping("/modules")
+    @AdminAudit(module = "MODULE", action = "CREATE")
     public ApiResult<ExamModule> createModule(@RequestBody ExamModule module) {
         module.setId(null);
+        module.setSystemBuiltin(false);
         return ApiResult.success(adminService.saveModule(module));
     }
 
-    @Operation(summary = "更新模块", description = "后台更新考试模块。")
     @PutMapping("/modules/{moduleId}")
+    @AdminAudit(module = "MODULE", action = "UPDATE", targetId = "#moduleId")
     public ApiResult<ExamModule> updateModule(@PathVariable Long moduleId, @RequestBody ExamModule module) {
         module.setId(moduleId);
         return ApiResult.success(adminService.saveModule(module));
     }
 
-    @Operation(summary = "删除模块", description = "后台删除考试模块。")
     @DeleteMapping("/modules/{moduleId}")
-    public ApiResult<Void> deleteModule(@PathVariable Long moduleId) {
-        adminService.deleteModule(moduleId);
+    @AdminAudit(module = "MODULE", action = "DELETE", targetId = "#moduleId")
+    public ApiResult<Void> deleteModule(@PathVariable Long moduleId,
+                                        @RequestBody(required = false) AdminConfirmRequest request) {
+        adminService.deleteModule(moduleId, request == null ? null : request.getConfirmText());
         return ApiResult.success("删除成功", null);
     }
 
-    @Operation(summary = "查询全部用户", description = "后台查询全部用户，密码字段不会返回。")
     @GetMapping("/users")
     public ApiResult<List<User>> getUsers() {
         return ApiResult.success(adminService.getUsers());
     }
 
-    @Operation(summary = "分配用户角色", description = "给用户分配角色。请求体字段：roleId 角色 ID。")
     @PutMapping("/users/{userId}/role")
-    public ApiResult<User> updateUserRole(@PathVariable Long userId, @RequestBody Map<String, Long> body) {
-        return ApiResult.success(adminService.updateUserRole(userId, body.get("roleId")));
+    @AdminAudit(module = "USER", action = "UPDATE_ROLE", targetId = "#userId")
+    public ApiResult<User> updateUserRole(@PathVariable Long userId, @RequestBody Map<String, Object> body) {
+        Long roleId = body.get("roleId") == null ? null : Long.valueOf(String.valueOf(body.get("roleId")));
+        String confirmText = body.get("confirmText") == null ? null : String.valueOf(body.get("confirmText"));
+        return ApiResult.success(adminService.updateUserRole(userId, roleId, confirmText));
     }
 
-    @Operation(summary = "删除用户", description = "后台删除用户。")
     @DeleteMapping("/users/{userId}")
-    public ApiResult<Void> deleteUser(@PathVariable Long userId) {
-        adminService.deleteUser(userId);
-        return ApiResult.success("删除成功", null);
+    @AdminAudit(module = "USER", action = "DISABLE", targetId = "#userId")
+    public ApiResult<Void> deleteUser(@PathVariable Long userId,
+                                      @RequestBody(required = false) AdminConfirmRequest request) {
+        adminService.deleteUser(userId, request == null ? null : request.getConfirmText());
+        return ApiResult.success("用户已禁用", null);
     }
 
-    @Operation(summary = "查询角色", description = "后台查询全部角色。")
     @GetMapping("/roles")
     public ApiResult<List<AdminRole>> getRoles() {
         return ApiResult.success(adminService.getRoles());
     }
 
-    @Operation(summary = "创建角色", description = "后台创建角色。")
     @PostMapping("/roles")
+    @AdminAudit(module = "ROLE", action = "CREATE")
     public ApiResult<AdminRole> createRole(@RequestBody AdminRole role) {
         role.setId(null);
+        role.setSystemBuiltin(false);
         return ApiResult.success(adminService.saveRole(role));
     }
 
-    @Operation(summary = "更新角色", description = "后台更新角色。")
     @PutMapping("/roles/{roleId}")
+    @AdminAudit(module = "ROLE", action = "UPDATE", targetId = "#roleId")
     public ApiResult<AdminRole> updateRole(@PathVariable Long roleId, @RequestBody AdminRole role) {
         role.setId(roleId);
         return ApiResult.success(adminService.saveRole(role));
     }
 
-    @Operation(summary = "删除角色", description = "后台删除角色，并删除角色权限关系。")
     @DeleteMapping("/roles/{roleId}")
-    public ApiResult<Void> deleteRole(@PathVariable Long roleId) {
-        adminService.deleteRole(roleId);
+    @AdminAudit(module = "ROLE", action = "DELETE", targetId = "#roleId")
+    public ApiResult<Void> deleteRole(@PathVariable Long roleId,
+                                      @RequestBody(required = false) AdminConfirmRequest request) {
+        adminService.deleteRole(roleId, request == null ? null : request.getConfirmText());
         return ApiResult.success("删除成功", null);
     }
 
-    @Operation(summary = "查询权限", description = "查询所有后台权限菜单。")
     @GetMapping("/permissions")
     public ApiResult<List<AdminPermission>> getPermissions() {
         return ApiResult.success(adminService.getPermissions());
     }
 
-    @Operation(summary = "查询角色权限", description = "查询指定角色已分配的权限。")
     @GetMapping("/roles/{roleId}/permissions")
     public ApiResult<List<AdminPermission>> getRolePermissions(@PathVariable Long roleId) {
         return ApiResult.success(adminService.getRolePermissions(roleId));
     }
 
-    @Operation(summary = "分配角色权限", description = "给角色分配权限。请求体字段：permissionIds 权限 ID 数组。")
     @PutMapping("/roles/{roleId}/permissions")
-    public ApiResult<Void> assignRolePermissions(@PathVariable Long roleId, @RequestBody Map<String, List<Long>> body) {
-        adminService.assignRolePermissions(roleId, body.getOrDefault("permissionIds", List.of()));
+    @AdminAudit(module = "ROLE", action = "ASSIGN_PERMISSIONS", targetId = "#roleId")
+    public ApiResult<Void> assignRolePermissions(@PathVariable Long roleId, @RequestBody Map<String, Object> body) {
+        Object rawPermissionIds = body.get("permissionIds");
+        List<Long> permissionIds = rawPermissionIds instanceof List<?> values
+                ? values.stream().map(value -> Long.valueOf(String.valueOf(value))).toList()
+                : List.of();
+        String confirmText = body.get("confirmText") == null ? null : String.valueOf(body.get("confirmText"));
+        adminService.assignRolePermissions(roleId, permissionIds, confirmText);
         return ApiResult.success("分配成功", null);
+    }
+
+    @GetMapping("/audit/operations")
+    public ApiResult<List<AdminOperationLog>> getOperationLogs() {
+        return ApiResult.success(adminService.getOperationLogs());
+    }
+
+    @GetMapping("/audit/permission-changes")
+    public ApiResult<List<AdminPermissionChangeLog>> getPermissionChangeLogs() {
+        return ApiResult.success(adminService.getPermissionChangeLogs());
     }
 }

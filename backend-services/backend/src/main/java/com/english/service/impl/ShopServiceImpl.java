@@ -9,6 +9,7 @@ import com.english.entity.ShopOrder;
 import com.english.entity.ShopProduct;
 import com.english.mapper.ShopOrderMapper;
 import com.english.mapper.ShopProductMapper;
+import com.english.service.ShopProductSearchService;
 import com.english.service.ShopService;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -28,7 +29,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,6 +65,7 @@ public class ShopServiceImpl implements ShopService {
 
     private final ShopProductMapper productMapper;
     private final ShopOrderMapper orderMapper;
+    private final ShopProductSearchService productSearchService;
     private final StringRedisTemplate redisTemplate;
     private final RabbitTemplate rabbitTemplate;
     private final TransactionTemplate transactionTemplate;
@@ -69,6 +74,7 @@ public class ShopServiceImpl implements ShopService {
 
     public ShopServiceImpl(ShopProductMapper productMapper,
                            ShopOrderMapper orderMapper,
+                           ShopProductSearchService productSearchService,
                            StringRedisTemplate redisTemplate,
                            RabbitTemplate rabbitTemplate,
                            TransactionTemplate transactionTemplate,
@@ -76,6 +82,7 @@ public class ShopServiceImpl implements ShopService {
                            @Value("${shop.order.timeout-minutes:30}") long orderTimeoutMinutes) {
         this.productMapper = productMapper;
         this.orderMapper = orderMapper;
+        this.productSearchService = productSearchService;
         this.redisTemplate = redisTemplate;
         this.rabbitTemplate = rabbitTemplate;
         this.transactionTemplate = transactionTemplate;
@@ -86,9 +93,29 @@ public class ShopServiceImpl implements ShopService {
     @Override
     public List<ShopProduct> getProducts() {
         List<ShopProduct> products = productMapper.findByActiveTrueOrderBySortOrderAscIdAsc();
-        products.forEach(product -> addProductToBloom(product.getId()));
-        products.forEach(this::syncStockFromRedis);
-        return products;
+        return prepareProductsForDisplay(products);
+    }
+
+    @Override
+    public List<ShopProduct> searchProducts(String keyword) {
+        String normalizedKeyword = normalizeSearchKeyword(keyword);
+        if (normalizedKeyword.isBlank()) {
+            return getProducts();
+        }
+
+        List<Long> productIds = productSearchService.searchProductIds(normalizedKeyword);
+        if (productIds.isEmpty()) {
+            return prepareProductsForDisplay(productMapper.searchActiveProductsByKeyword(normalizedKeyword));
+        }
+
+        Map<Long, Integer> sortIndex = new HashMap<>();
+        for (int i = 0; i < productIds.size(); i++) {
+            sortIndex.put(productIds.get(i), i);
+        }
+        List<ShopProduct> products = productMapper.findByIdInAndActiveTrue(productIds).stream()
+                .sorted(Comparator.comparingInt(product -> sortIndex.getOrDefault(product.getId(), Integer.MAX_VALUE)))
+                .toList();
+        return prepareProductsForDisplay(products);
     }
 
     @PostConstruct
@@ -650,5 +677,19 @@ public class ShopServiceImpl implements ShopService {
     private String buildOrderNo() {
         String prefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         return "EL" + prefix + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+    }
+
+    private List<ShopProduct> prepareProductsForDisplay(List<ShopProduct> products) {
+        products.forEach(product -> addProductToBloom(product.getId()));
+        products.forEach(this::syncStockFromRedis);
+        return products;
+    }
+
+    private String normalizeSearchKeyword(String keyword) {
+        if (keyword == null) {
+            return "";
+        }
+        String normalized = keyword.trim().replaceAll("\\s+", " ");
+        return normalized.length() <= 80 ? normalized : normalized.substring(0, 80);
     }
 }

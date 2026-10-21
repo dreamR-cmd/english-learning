@@ -17,6 +17,8 @@
      private String icon;
      private String routePath;
      private Integer sortOrder;
+     @Column(name = "system_builtin", nullable = false)
+     private Boolean systemBuiltin = false;
 
      @Transient
      private ExamCountdown examCountdown;
@@ -37,6 +39,8 @@
      public void setRoutePath(String routePath) { this.routePath = routePath; }
      public Integer getSortOrder() { return sortOrder; }
      public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+     public Boolean getSystemBuiltin() { return systemBuiltin; }
+     public void setSystemBuiltin(Boolean systemBuiltin) { this.systemBuiltin = systemBuiltin; }
      public ExamCountdown getExamCountdown() { return examCountdown; }
      public void setExamCountdown(ExamCountdown examCountdown) { this.examCountdown = examCountdown; }
  }

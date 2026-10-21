@@ -12,6 +12,22 @@ public interface ShopProductMapper extends JpaRepository<ShopProduct, Long> {
     // 商城列表只展示上架商品，并按 sortOrder 控制展示顺序。
     List<ShopProduct> findByActiveTrueOrderBySortOrderAscIdAsc();
 
+    List<ShopProduct> findByIdInAndActiveTrue(List<Long> ids);
+
+    @Query("""
+            select p from ShopProduct p
+            where p.active = true
+              and (
+                lower(p.title) like lower(concat('%', :keyword, '%'))
+                or lower(p.category) like lower(concat('%', :keyword, '%'))
+                or lower(p.description) like lower(concat('%', :keyword, '%'))
+                or lower(p.tag) like lower(concat('%', :keyword, '%'))
+                or lower(p.points) like lower(concat('%', :keyword, '%'))
+              )
+            order by p.sortOrder asc, p.id asc
+            """)
+    List<ShopProduct> searchActiveProductsByKeyword(@Param("keyword") String keyword);
+
     @Modifying
     /*
      * 数据库层面的原子扣库存。

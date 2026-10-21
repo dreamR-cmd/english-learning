@@ -11,9 +11,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <groupId>com.english</groupId>
     <artifactId>rag-service</artifactId>
-    <version>1.0.0</version>
     <name>rag-service</name>
 
     <properties>

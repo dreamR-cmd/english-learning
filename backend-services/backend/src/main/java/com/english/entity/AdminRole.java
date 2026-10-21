@@ -22,6 +22,9 @@ public class AdminRole {
 
     private String description;
 
+    @Column(name = "system_builtin", nullable = false)
+    private Boolean systemBuiltin = false;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getCode() { return code; }
@@ -30,4 +33,6 @@ public class AdminRole {
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public Boolean getSystemBuiltin() { return systemBuiltin; }
+    public void setSystemBuiltin(Boolean systemBuiltin) { this.systemBuiltin = systemBuiltin; }
 }

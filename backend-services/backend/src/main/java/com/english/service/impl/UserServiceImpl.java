@@ -37,6 +37,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public User updateProfile(Long userId, String nickname, Integer dailyWordTarget) {
         User user = userMapper.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
@@ -54,6 +55,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public WrongRecord saveWrongRecord(WrongRecord record) {
         return wrongRecordMapper.save(record);
     }
@@ -64,11 +66,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void removeWrongRecord(Long userId, Long wrongRecordId) {
         wrongRecordMapper.deleteByIdAndUserId(wrongRecordId, userId);
     }
 
     @Override
+    @Transactional
     public UserFavorite addFavorite(Long userId, Long readingId) {
         if (userFavoriteMapper.findByUserIdAndReadingId(userId, readingId).isPresent()) {
             return null;
@@ -80,6 +84,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void removeFavorite(Long userId, Long readingId) {
         userFavoriteMapper.deleteByUserIdAndReadingId(userId, readingId);
     }
