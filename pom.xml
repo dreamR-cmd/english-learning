@@ -26,6 +26,7 @@
         <module>backend-services/rag-service</module>
         <module>backend-services/gateway</module>
         <module>backend-services/migration-service</module>
+        <module>backend-services/rag-service</module>
     </modules>
 
     <properties>
