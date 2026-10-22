@@ -23,7 +23,6 @@
         <module>backend-services/learning-service</module>
         <module>backend-services/shop-service</module>
         <module>backend-services/admin-service</module>
-        <module>backend-services/rag-service</module>
         <module>backend-services/gateway</module>
         <module>backend-services/migration-service</module>
         <module>backend-services/rag-service</module>

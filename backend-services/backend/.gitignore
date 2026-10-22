@@ -1,5 +1,0 @@
-target/
-.m2/
-.idea/
-*.iml
-src/main/resources/application.yml

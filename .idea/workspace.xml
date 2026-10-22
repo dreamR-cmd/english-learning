@@ -4,7 +4,157 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="735ebca6-0224-4a1e-9a47-6a1677f43f39" name="更改" comment="" />
+    <list default="true" id="6f7bc193-c9e6-4fb6-8aa3-9f5128ef50e7" name="更改" comment="">
+      <change beforePath="$PROJECT_DIR$/.dockerignore" beforeDir="false" afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/.claude/settings.local.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/.mvn/maven.config" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/.mvn/settings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/.vscode/launch.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/.vscode/settings.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/pom.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/EnglishLearningApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/Test.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminAudit.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminAuditAspect.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminAuthContext.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminAuthFilter.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminExceptionHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/CorsConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/CurrentUser.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/NavigationModuleInitializer.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/OpenApiConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/PasswordConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/RagExceptionHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/ReadingDataInitializer.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/RedissonConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/ShopRabbitConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/UserContextFilter.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/AdminController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/AuthController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/ModuleController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/PracticeController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/RagController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/SelectedReadingController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/ShopController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/UserController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/AdminConfirmRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/ApiResult.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/CreateOrderRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/CreateOrderTokenRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/CreateSeckillOrderRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/ExamCountdown.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/LoginRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/LoginUserInfo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/OrderTokenResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/PayOrderRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagAnswerResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagDocumentRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagDocumentResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagQueryRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagSearchItem.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/SeckillOrderMessage.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/SeckillOrderResultResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/SeckillOrderSubmitResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/SelectedReadingItem.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/WordPracticeItem.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminOperationLog.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminPermission.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminPermissionChangeLog.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminRole.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminRolePermission.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/ExamModule.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/Listening.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/RagDocument.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/RagDocumentChunk.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/Reading.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/SelectedReading.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/ShopOrder.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/ShopProduct.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/User.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/UserDailyWordAssignment.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/UserFavorite.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/UserSelectedReadingFavorite.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/UserWordProgress.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/Word.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/WrongRecord.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminOperationLogMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminPermissionChangeLogMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminPermissionMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminRoleMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminRolePermissionMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ExamModuleMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ListeningMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/RagDocumentChunkMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/RagDocumentMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ReadingMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/SelectedReadingMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ShopOrderMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ShopProductMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserDailyWordAssignmentMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserFavoriteMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserSelectedReadingFavoriteMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserWordProgressMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/WordMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/WrongRecordMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/AdminService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/AdminTokenService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/AuthService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/CountdownService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ModuleService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/PracticeService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagChunker.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagEmbeddingService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagVectorRecord.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagVectorStore.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/SelectedReadingService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ShopOrderTimeoutListener.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ShopProductSearchService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ShopSeckillOrderListener.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ShopService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/UserService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/AdminServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/AuthServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/InMemoryRagService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/LangChain4jEmbeddingService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/ModuleServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/PracticeServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/RagDocumentFileParser.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/RagInternalApiClient.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/RedisStackRagVectorStore.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/SelectedReadingServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/ShopProductSearchServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/ShopServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/SimpleRagChunker.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/UserServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/AgentIntent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/AgentRequestContext.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/KnowledgeAgent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/LearningAgent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/PendingUserAction.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/PendingUserActionStore.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/RagAgentService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/RagChatModelFactory.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/RagIntentRouter.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/SafetyAgent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/SpecialistAgent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/SpecialistAgentRunner.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/WrongRecordAgent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/KnowledgeBaseTool.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/KnowledgeBaseToolResult.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/KnowledgeTools.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/LearningTools.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/UserActionTools.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/WrongRecordTools.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/resources/application-example.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/test/AiTest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -28,62 +178,69 @@
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
-        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+        <option name="customMavenHome" value="D:\envivernment\apache-maven-3.6.3" />
+        <option name="mavenHomeTypeForPersistence" value="CUSTOM" />
       </MavenGeneralSettings>
     </option>
   </component>
   <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 1,
-  &quot;fromUser&quot;: false
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 0
 }</component>
-  <component name="ProjectId" id="3GCPR2zIJEfciZLvXkNOYxO69Vi" />
+  <component name="ProjectId" id="3HozwObavgfksNNmiZCWR0hsjWC" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
-    &quot;Maven. [org.apache.maven.plugins:maven-archetype-plugin:RELEASE:generate].executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Docker.docker-compose.yaml: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.admin-service: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.auth-service: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.elasticsearch: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.frontend: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.gateway: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.learning-service: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.migration-service: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.nacos: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.rag-service: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.shop-service: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml.user-service: Compose 部署.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.docker-compose.yml: Compose 部署.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;Spring Boot.EnglishLearningApplication.executor&quot;: &quot;Debug&quot;,
-    &quot;Spring Boot.GatewayApplication.executor&quot;: &quot;Debug&quot;,
-    &quot;Spring Boot.RagServiceApplication.executor&quot;: &quot;Debug&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;Spring Boot.GatewayApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Spring Boot.RagServiceApplication.executor&quot;: &quot;Run&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;F:/idea_project/english_learning/english-learning&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;onboarding.tips.debug.path&quot;: &quot;F:/idea_project/english_learning/english-learning/rag-service/src/main/java/org/rag/Main.java&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;模块&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;MavenSettings&quot;,
-    &quot;应用程序.Main.executor&quot;: &quot;Run&quot;
+    &quot;project.structure.last.edited&quot;: &quot;项目&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;MavenSettings&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;mysql_aurora&quot;
+    ]
   }
 }</component>
-  <component name="RunManager" selected="Spring Boot.RagServiceApplication">
-    <configuration name="Main" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="org.example.Main" />
-      <module name="rag-service" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="org.example.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
+  <component name="RunManager" selected="Docker.docker-compose.yaml: Compose 部署">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="english-learning" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="EnglishLearningApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
-      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UnknownPolicyInFreeMode" />
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
       <module name="english-learning" />
-      <option name="SPRING_BOOT_MAIN_CLASS" value="com.english.EnglishLearningApplication" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration name="RagServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UnknownPolicyInFreeMode" />
+      <module name="rag-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.english.RagServiceApplication" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="com.english.*" />
@@ -94,73 +251,79 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="GatewayApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
-      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UnknownPolicyInFreeMode" />
-      <module name="english-learning-gateway" />
-      <option name="SPRING_BOOT_MAIN_CLASS" value="com.english.gateway.GatewayApplication" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="com.english.gateway.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
+    <configuration default="true" type="docker-deploy" factoryName="docker-compose.yml" temporary="true">
+      <deployment type="docker-compose.yml">
+        <settings />
+      </deployment>
+      <method v="2" />
     </configuration>
-    <configuration name="RagServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
-      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UnknownPolicyInFreeMode" />
-      <module name="rag-sevice" />
-      <option name="SPRING_BOOT_MAIN_CLASS" value="org.rag.ragservice.RagServiceApplication" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="org.rag.ragservice.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
+    <configuration name="docker-compose.yaml: Compose 部署" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="sourceFilePath" value="docker-compose.yaml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration name="docker-compose.yml: Compose 部署" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="sourceFilePath" value="docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration name="docker-compose.yml.admin-service: Compose 部署" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="services">
+            <list>
+              <option value="admin-service" />
+            </list>
+          </option>
+          <option name="sourceFilePath" value="docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration name="docker-compose.yml.nacos: Compose 部署" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="services">
+            <list>
+              <option value="nacos" />
+            </list>
+          </option>
+          <option name="sourceFilePath" value="docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Docker.docker-compose.yaml: Compose 部署" />
         <item itemvalue="Spring Boot.RagServiceApplication" />
-        <item itemvalue="应用程序.Main" />
-        <item itemvalue="Spring Boot.GatewayApplication" />
-        <item itemvalue="Spring Boot.EnglishLearningApplication" />
+        <item itemvalue="Docker.docker-compose.yml: Compose 部署" />
+        <item itemvalue="Docker.docker-compose.yml.nacos: Compose 部署" />
+        <item itemvalue="Docker.docker-compose.yml.admin-service: Compose 部署" />
       </list>
     </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-30f59d01ecdd-37e91769500f-intellij.indexing.shared.core-IU-261.25134.95" />
-        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-IU-261.25134.95" />
+        <option value="bundled-jdk-30f59d01ecdd-cffe25b9f5b3-intellij.indexing.shared.core-IU-253.28294.334" />
       </set>
     </attachedChunks>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="默认任务">
-      <changelist id="735ebca6-0224-4a1e-9a47-6a1677f43f39" name="更改" comment="" />
-      <created>1783472565569</created>
+      <changelist id="6f7bc193-c9e6-4fb6-8aa3-9f5128ef50e7" name="更改" comment="" />
+      <created>1786549447279</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1783472565569</updated>
+      <updated>1786549447279</updated>
     </task>
     <servers />
-  </component>
-  <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="3" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/rag-service/src/main/java/org/rag/Main.java</url>
-          <line>13</line>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

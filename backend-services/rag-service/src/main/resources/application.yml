@@ -14,3 +14,7 @@ spring:
         file-extension: yaml
       discovery:
         server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+
+rag:
+  vector:
+    store: ${RAG_VECTOR_STORE:redis}
