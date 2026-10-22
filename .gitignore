@@ -18,3 +18,4 @@ frontend/dist/
 backend-services/backend/src/main/resources/*.yaml
 docs/*.md
 .env
+".idea/" 
