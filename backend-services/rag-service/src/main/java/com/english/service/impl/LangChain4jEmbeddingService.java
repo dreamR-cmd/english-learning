@@ -1,6 +1,8 @@
 package com.english.service.impl;
 
 import com.english.service.RagEmbeddingService;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -9,50 +11,37 @@ import java.time.Duration;
 
 @Service
 public class LangChain4jEmbeddingService implements RagEmbeddingService {
-    private final String apiKey;
-    private final String baseUrl;
-    private final String modelName;
-    private final Integer dimensions;
-    private final long timeoutSeconds;
-    private volatile OpenAiEmbeddingModel embeddingModel;
+
+    private final EmbeddingModel embeddingModel;
 
     public LangChain4jEmbeddingService(
+            @Value("${rag.embedding.provider:ollama}") String provider,
             @Value("${rag.embedding.api-key:}") String apiKey,
-            @Value("${rag.embedding.base-url:}") String baseUrl,
-            @Value("${rag.embedding.model-name:}") String modelName,
-            @Value("${rag.vector.dimension:1536}") Integer dimensions,
-            @Value("${rag.embedding.timeout-seconds:30}") long timeoutSeconds) {
-        this.apiKey = apiKey;
-        this.baseUrl = baseUrl;
-        this.modelName = modelName;
-        this.dimensions = dimensions;
-        this.timeoutSeconds = timeoutSeconds;
+            @Value("${rag.embedding.base-url:}") String openaiBaseUrl,
+            @Value("${rag.embedding.model-name:bge-m3}") String modelName,
+            @Value("${rag.embedding.ollama.base-url:http://ollama:11434}") String ollamaBaseUrl,
+            @Value("${rag.vector.dimension:1024}") Integer dimensions,
+            @Value("${rag.embedding.timeout-seconds:60}") long timeoutSeconds) {
+
+        if ("ollama".equalsIgnoreCase(provider)) {
+            this.embeddingModel = OllamaEmbeddingModel.builder()
+                    .baseUrl(ollamaBaseUrl)
+                    .modelName(modelName)
+                    .timeout(Duration.ofSeconds(timeoutSeconds))
+                    .build();
+        } else {
+            this.embeddingModel = OpenAiEmbeddingModel.builder()
+                    .apiKey(apiKey)
+                    .baseUrl(openaiBaseUrl)
+                    .modelName(modelName)
+                    .dimensions(dimensions)
+                    .timeout(Duration.ofSeconds(timeoutSeconds))
+                    .build();
+        }
     }
 
     @Override
     public float[] embed(String text) {
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException("OPENAI_API_KEY is not configured; cannot generate RAG embedding");
-        }
-        return model().embed(text).content().vector();
-    }
-
-    private OpenAiEmbeddingModel model() {
-        OpenAiEmbeddingModel current = embeddingModel;
-        if (current != null) {
-            return current;
-        }
-        synchronized (this) {
-            if (embeddingModel == null) {
-                embeddingModel = OpenAiEmbeddingModel.builder()
-                        .apiKey(apiKey)
-                        .baseUrl(baseUrl)
-                        .modelName(modelName)
-                        .dimensions(dimensions)
-                        .timeout(Duration.ofSeconds(timeoutSeconds))
-                        .build();
-            }
-            return embeddingModel;
-        }
+        return embeddingModel.embed(text).content().vector();
     }
 }

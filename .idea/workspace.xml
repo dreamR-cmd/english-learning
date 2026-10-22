@@ -5,155 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6f7bc193-c9e6-4fb6-8aa3-9f5128ef50e7" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/.dockerignore" beforeDir="false" afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/.claude/settings.local.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/.mvn/maven.config" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/.mvn/settings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/.vscode/launch.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/.vscode/settings.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/pom.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/EnglishLearningApplication.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/Test.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminAudit.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminAuditAspect.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminAuthContext.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminAuthFilter.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/AdminExceptionHandler.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/CorsConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/CurrentUser.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/NavigationModuleInitializer.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/OpenApiConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/PasswordConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/RagExceptionHandler.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/ReadingDataInitializer.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/RedissonConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/ShopRabbitConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/config/UserContextFilter.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/AdminController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/AuthController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/ModuleController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/PracticeController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/RagController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/SelectedReadingController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/ShopController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/controller/UserController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/AdminConfirmRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/ApiResult.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/CreateOrderRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/CreateOrderTokenRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/CreateSeckillOrderRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/ExamCountdown.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/LoginRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/LoginUserInfo.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/OrderTokenResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/PayOrderRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagAnswerResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagDocumentRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagDocumentResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagQueryRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/RagSearchItem.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/SeckillOrderMessage.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/SeckillOrderResultResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/SeckillOrderSubmitResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/SelectedReadingItem.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/dto/WordPracticeItem.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminOperationLog.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminPermission.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminPermissionChangeLog.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminRole.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/AdminRolePermission.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/ExamModule.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/Listening.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/RagDocument.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/RagDocumentChunk.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/Reading.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/SelectedReading.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/ShopOrder.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/ShopProduct.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/User.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/UserDailyWordAssignment.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/UserFavorite.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/UserSelectedReadingFavorite.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/UserWordProgress.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/Word.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/entity/WrongRecord.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminOperationLogMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminPermissionChangeLogMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminPermissionMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminRoleMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/AdminRolePermissionMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ExamModuleMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ListeningMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/RagDocumentChunkMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/RagDocumentMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ReadingMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/SelectedReadingMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ShopOrderMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/ShopProductMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserDailyWordAssignmentMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserFavoriteMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserSelectedReadingFavoriteMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/UserWordProgressMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/WordMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/mapper/WrongRecordMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/AdminService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/AdminTokenService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/AuthService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/CountdownService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ModuleService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/PracticeService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagChunker.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagEmbeddingService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagVectorRecord.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/RagVectorStore.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/SelectedReadingService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ShopOrderTimeoutListener.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ShopProductSearchService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ShopSeckillOrderListener.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/ShopService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/UserService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/AdminServiceImpl.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/AuthServiceImpl.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/InMemoryRagService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/LangChain4jEmbeddingService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/ModuleServiceImpl.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/PracticeServiceImpl.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/RagDocumentFileParser.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/RagInternalApiClient.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/RedisStackRagVectorStore.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/SelectedReadingServiceImpl.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/ShopProductSearchServiceImpl.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/ShopServiceImpl.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/SimpleRagChunker.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/UserServiceImpl.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/AgentIntent.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/AgentRequestContext.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/KnowledgeAgent.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/LearningAgent.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/PendingUserAction.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/PendingUserActionStore.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/RagAgentService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/RagChatModelFactory.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/RagIntentRouter.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/SafetyAgent.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/SpecialistAgent.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/SpecialistAgentRunner.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/agent/WrongRecordAgent.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/KnowledgeBaseTool.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/KnowledgeBaseToolResult.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/KnowledgeTools.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/LearningTools.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/UserActionTools.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/java/com/english/service/impl/tools/WrongRecordTools.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/main/resources/application-example.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/backend/src/test/AiTest" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/src/main/java/com/english/service/impl/LangChain4jEmbeddingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/src/main/java/com/english/service/impl/LangChain4jEmbeddingService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/src/main/java/com/english/service/impl/QdrantRagVectorStore.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/src/main/java/com/english/service/impl/QdrantRagVectorStore.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/src/main/java/com/english/service/impl/RedisStackRagVectorStore.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/src/main/java/com/english/service/impl/RedisStackRagVectorStore.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/src/main/java/com/english/service/impl/agent/RagChatModelFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/src/main/java/com/english/service/impl/agent/RagChatModelFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/InMemoryRagService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/InMemoryRagService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/LangChain4jEmbeddingService.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/LangChain4jEmbeddingService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/QdrantRagVectorStore.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/QdrantRagVectorStore.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/RedisStackRagVectorStore$RediSearchCommand.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/RedisStackRagVectorStore$RediSearchCommand.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/RedisStackRagVectorStore.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/RedisStackRagVectorStore.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/agent/RagChatModelFactory.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/agent/RagChatModelFactory.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/agent/SpecialistAgentRunner.class" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/rag-service/target/classes/com/english/service/impl/agent/SpecialistAgentRunner.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.nio.ByteBuffer;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @Service
+@ConditionalOnProperty(name = "rag.vector.store", havingValue = "redis", matchIfMissing = true)
 public class RedisStackRagVectorStore implements RagVectorStore {
     private static final ByteArrayCodec BYTE_ARRAY_CODEC = ByteArrayCodec.INSTANCE;
     private static final Charset WINDOWS_1252 = Charset.forName("windows-1252");

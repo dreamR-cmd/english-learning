@@ -11,11 +11,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -85,7 +87,7 @@ public class QdrantRagVectorStore implements RagVectorStore {
             body.put("vectors", vectorsConfig);
             body.put("params", params);
 
-            post("/collections/" + collectionName, body);
+            put("/collections/" + collectionName, body);
             log.info("[Qdrant] collection {} created (dim={}, HNSW M={})",
                     collectionName, dimension, hnswM);
         } catch (Exception e) {
@@ -97,6 +99,9 @@ public class QdrantRagVectorStore implements RagVectorStore {
     public void upsert(RagVectorRecord record) {
         try {
             float[] vec = normalizeVectors ? normalize(record.embedding()) : record.embedding();
+            log.info("[Qdrant] upserting chunkId={}, title=[{}], bytes={}",
+                    record.chunkId(), record.title(),
+                    record.title() != null ? record.title().getBytes(StandardCharsets.UTF_8).length : 0);
 
             Map<String, Object> point = new HashMap<>();
             point.put("id", record.chunkId());
@@ -110,10 +115,9 @@ public class QdrantRagVectorStore implements RagVectorStore {
             point.put("payload", payload);
 
             Map<String, Object> body = new HashMap<>();
-            body.put("collection_name", collectionName);
             body.put("points", List.of(point));
 
-            post("/collections/" + collectionName + "/points", body);
+            put("/collections/" + collectionName + "/points", body);
             log.debug("[Qdrant] upsert success: chunkId={}", record.chunkId());
         } catch (Exception e) {
             log.error("[Qdrant] upsert failed: chunkId={}", record.chunkId(), e);
@@ -173,7 +177,6 @@ public class QdrantRagVectorStore implements RagVectorStore {
                 return;
             }
             Map<String, Object> body = new HashMap<>();
-            body.put("collection_name", collectionName);
             body.put("points", List.of(chunkId));
             post("/collections/" + collectionName + "/points/delete", body);
             log.debug("[Qdrant] delete success: chunkId={}", chunkId);
@@ -182,24 +185,37 @@ public class QdrantRagVectorStore implements RagVectorStore {
         }
     }
 
-    private ResponseEntity<String> post(String path, Object body) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        String json;
+    private ResponseEntity<String> put(String path, Object body) {
         try {
-            json = mapper.writeValueAsString(body);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            String json = mapper.writeValueAsString(body);
+            byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+            log.info("[Qdrant] PUT {} body bytes={}, first100={}", path, bytes.length,
+                    json.length() > 100 ? json.substring(0, 100) : json);
+            return rest.exchange(baseUrl + path, HttpMethod.PUT, new HttpEntity<>(bytes, headers), String.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return rest.postForEntity(baseUrl + path, new HttpEntity<>(json, headers), String.class);
+    }
+
+    private ResponseEntity<String> post(String path, Object body) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            byte[] bytes = mapper.writeValueAsString(body).getBytes(StandardCharsets.UTF_8);
+            return rest.postForEntity(baseUrl + path, new HttpEntity<>(bytes, headers), String.class);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private JsonNode postForJson(String path, Object body) throws Exception {
-        String json = mapper.writeValueAsString(body);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        byte[] bytes = mapper.writeValueAsString(body).getBytes(StandardCharsets.UTF_8);
         ResponseEntity<String> resp = rest.postForEntity(
-                baseUrl + path, new HttpEntity<>(json, headers), String.class);
+                baseUrl + path, new HttpEntity<>(bytes, headers), String.class);
         return mapper.readTree(resp.getBody());
     }
 

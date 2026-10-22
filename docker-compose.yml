@@ -63,12 +63,39 @@ services:
     environment:
       QDRANT_ALLOW_CORS: "true"
       QDRANT__LOG_LEVEL: INFO
-    healthcheck:
-      test: ["CMD", "sh", "-c", "curl -fsS http://localhost:6333/healthz >/dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - english-learning
+
+  ollama:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_NUM_PARALLEL: "2"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    restart: unless-stopped
+    networks:
+      - english-learning
+
+  ollama-init:
+    image: curlimages/curl:latest
+    depends_on:
+      ollama:
+        condition: service_started
+    command: >
+      sh -c '
+        echo "waiting for ollama..."
+        until curl -s http://ollama:11434/api/tags >/dev/null 2>&1; do
+          sleep 2
+        done
+        echo "pulling bge-m3 model (this may take a few minutes)..."
+        curl -s http://ollama:11434/api/pull -d "{\"name\":\"bge-m3\"}"
+        echo "bge-m3 ready"
+      '
+    restart: "no"
     networks:
       - english-learning
 
@@ -308,8 +335,15 @@ services:
       RAG_EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL:-text-embedding-3-small}
       RAG_EMBEDDING_DIMENSION: ${RAG_EMBEDDING_DIMENSION:-1536}
       RAG_VECTOR_STORE: qdrant
-      QDRANT_HOST: qdrant
-      QDRANT_HTTP_PORT: "6333"
+      RAG_VECTOR_QDRANT_HOST: qdrant
+      RAG_VECTOR_QDRANT_HTTP_PORT: "6333"
+      RAG_VECTOR_DIMENSION: "1024"
+      RAG_EMBEDDING_PROVIDER: ollama
+      RAG_EMBEDDING_MODEL_NAME: bge-m3
+      RAG_EMBEDDING_OLLAMA_BASE_URL: http://host.docker.internal:11434
+      RAG_CHAT_PROVIDER: ollama
+      RAG_CHAT_MODEL_NAME: qwen3.5:9b
+      RAG_CHAT_OLLAMA_BASE_URL: http://host.docker.internal:11434
       JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
     ports:
     - "8092:8092"
@@ -324,7 +358,7 @@ services:
       redis:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
     networks:
       - english-learning
 
@@ -391,6 +425,7 @@ volumes:
   nacos_data:
   nacos_logs:
   qdrant_data:
+  ollama_data:
 
 networks:
   english-learning:
