@@ -15,11 +15,11 @@ import com.english.service.RagVectorRecord;
 import com.english.service.RagVectorStore;
 import com.english.service.impl.agent.RagAgentService;
 import com.english.service.impl.agent.RagChatModelFactory;
+import com.english.service.impl.agent.SummarizingChatMemory;
 import com.english.service.impl.tools.KnowledgeBaseToolResult;
 
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
-import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.service.AiServices;
@@ -60,8 +60,10 @@ public class InMemoryRagService implements RagService {
     private final RagChatModelFactory chatModelFactory;
     private final int defaultMaxResults;
     private final boolean agentEnabled;
+    private final int memoryMaxMessages;
+    private final int memoryKeepMessages;
+    private final int memoryMaxSummaryChars;
     private final CurrentUser currentUser;
-    private final Map<String, ChatMemory> memoryStore = new ConcurrentHashMap<>();
     private final Map<String, RagConversationContext> conversationStore = new ConcurrentHashMap<>();
 
     public InMemoryRagService(RagDocumentMapper documentMapper,
@@ -74,6 +76,9 @@ public class InMemoryRagService implements RagService {
                               RagChatModelFactory chatModelFactory,
                               @Value("${rag.max-results:5}") int defaultMaxResults,
                               @Value("${rag.agent.enabled:true}") boolean agentEnabled,
+                              @Value("${rag.chat.memory.max-messages:20}") int memoryMaxMessages,
+                              @Value("${rag.chat.memory.keep-messages:10}") int memoryKeepMessages,
+                              @Value("${rag.chat.memory.max-summary-chars:2000}") int memoryMaxSummaryChars,
                               CurrentUser currentUser) {
         this.documentMapper = documentMapper;
         this.chunkMapper = chunkMapper;
@@ -85,6 +90,9 @@ public class InMemoryRagService implements RagService {
         this.chatModelFactory = chatModelFactory;
         this.defaultMaxResults = defaultMaxResults;
         this.agentEnabled = agentEnabled;
+        this.memoryMaxMessages = memoryMaxMessages;
+        this.memoryKeepMessages = memoryKeepMessages;
+        this.memoryMaxSummaryChars = memoryMaxSummaryChars;
         this.currentUser = currentUser;
 
     }
@@ -285,10 +293,13 @@ public class InMemoryRagService implements RagService {
 
     
     private ChatMemoryProvider chatMemoryProvider() {
-        return memoryId -> {
-            String id = String.valueOf(memoryId);
-            return memoryStore.computeIfAbsent(id, ignored -> MessageWindowChatMemory.withMaxMessages(20));
-        };
+        return memoryId -> new SummarizingChatMemory(
+                memoryId,
+                chatModelFactory.chatModel(),
+                memoryMaxMessages,
+                memoryKeepMessages,
+                memoryMaxSummaryChars
+        );
     }
 
     private KnowledgeBaseToolResult searchKnowledgeBaseForAgent(String question, Integer topK, String sessionId) {
