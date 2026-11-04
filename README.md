@@ -15,7 +15,7 @@
 - 搜索能力：商城商品使用 Elasticsearch 建索引，Redis 缓存搜索结果，失败时回退 MySQL 模糊查询。
 - 后台管理：订单、模块、用户、角色、权限、审计日志、权限变更日志。
 - 风险控制：管理员敏感操作需要 `CONFIRM` 二次确认，系统内置角色和模块受后端保护。
-- RAG 知识库：文本/PDF/Word 文档入库、切片、向量检索、知识库问答、SSE 流式回答、前台悬浮 AI 对话。
+- RAG 知识库：文本/PDF/Word/图片/视频文档入库（扫描件 OCR、视频抽帧 OCR）、切片、向量检索 + 精排（rerank）、知识库问答、SSE 流式回答、上下文自动压缩、前台悬浮 AI 对话。
 - 数据治理：通过 `migration-service` 运行 Flyway 迁移脚本，基础数据由版本化 SQL 初始化。
 - 网关边界：Gateway 校验登录态后注入 `X-User-Id`，并向下游注入 `X-Internal-Gateway-Secret`，下游服务拒绝绕过网关的普通业务请求。
 
@@ -31,7 +31,7 @@
 | 向量检索 | **Qdrant**（HNSW + COSINE） |
 | Embedding | **Ollama + bge-m3**（本地，1024 维，零成本） |
 | LLM | **Ollama + qwen3.5:9b**（本地，中英双语 Agent 问答） |
-| 消息队列 | RabbitMQ、TTL 队列、死信队列 |
+| 消息队列 | RocketMQ 5.x、定时消息（延迟等级）、消费重试 + 死信 Topic |
 | 商品搜索 | Elasticsearch 8、Redis 搜索结果缓存 |
 | RAG | LangChain4j（Agent、Function Calling、AiServices）、PDFBox、Apache POI |
 | 文档 | springdoc-openapi / Swagger UI |
@@ -158,7 +158,7 @@ spring.sql.init.mode: never
 - Docker / Docker Compose
 - MySQL 8
 - Redis 7
-- RabbitMQ 3
+- RocketMQ 5（NameServer + Broker）
 - Elasticsearch 8
 - **Qdrant**（向量库，Docker Compose 自动部署）
 - **Ollama**（本地模型推理，宿主机运行，需要预先拉取 `bge-m3` 和 `qwen3.5:9b`）
@@ -202,7 +202,7 @@ docker compose up -d --build
 | 前端 | http://localhost:3000 |
 | Gateway / API | http://localhost:8081 |
 | Swagger UI | http://localhost:8081/swagger-ui/index.html |
-| RabbitMQ 管理台 | http://localhost:15672 |
+| RocketMQ（mqadmin CLI 管理） | broker 10911 / namesrv 9876 |
 | Elasticsearch | http://localhost:9200 |
 
 Docker Compose 会等待 MySQL 健康检查通过，先运行 `migration-service`，迁移成功后再启动业务服务。
@@ -224,7 +224,7 @@ docker compose down -v
 先启动基础设施，可以只用 Compose 启动依赖：
 
 ```bash
-docker compose up -d mysql redis rabbitmq elasticsearch qdrant
+docker compose up -d mysql redis rocketmq-namesrv rocketmq-broker elasticsearch qdrant
 ```
 
 首次启动或数据库结构变化后，先执行迁移：
@@ -268,7 +268,7 @@ npm run dev
 | `AUTH_DB_URL`、`USER_DB_URL`、`LEARNING_DB_URL`、`SHOP_DB_URL`、`ADMIN_DB_URL`、`RAG_DB_URL` | 各服务独立数据库连接覆盖 |
 | `JPA_DDL_AUTO` | JPA DDL 策略，默认 `validate` |
 | `REDIS_HOST`、`REDIS_PORT`、`REDIS_PASSWORD`、`REDIS_DATABASE` | Redis 7（缓存、锁） |
-| `RABBITMQ_HOST`、`RABBITMQ_PORT`、`RABBITMQ_USERNAME`、`RABBITMQ_PASSWORD` | RabbitMQ |
+| `ROCKETMQ_NAME_SERVER` | RocketMQ NameServer 地址，默认 `localhost:9876` |
 | `ELASTICSEARCH_URL` | 商品搜索 Elasticsearch 地址 |
 | `SHOP_SEARCH_ENABLED` | 是否启用商城 ES 搜索 |
 | `ADMIN_TOKEN_SECRET` | 登录 token HMAC 密钥，auth、gateway、admin 必须一致 |
@@ -285,6 +285,16 @@ npm run dev
 | `RAG_CHAT_OLLAMA_BASE_URL` | Ollama chat 地址（默认 `http://host.docker.internal:11434`） |
 | `RAG_CHAT_API_KEY` / `RAG_CHAT_BASE_URL` | OpenAI 兼容端点（provider=openai 时生效） |
 | `RAG_AGENT_ENABLED` | 是否启用 Agent 意图路由，默认 `true` |
+| `RAG_OCR_MODEL` | 图片/扫描件 OCR 视觉模型，默认 `qwen2.5vl:7b`（需 ollama pull） |
+| `RAG_OCR_MAX_PDF_PAGES` | 扫描 PDF OCR 页数上限，默认 50 |
+| `RAG_OCR_VIDEO_FRAME_INTERVAL_SECONDS` | 视频抽帧间隔秒数，默认 10 |
+| `RAG_OCR_TIMEOUT_SECONDS` | OCR 单次调用超时，默认 120 |
+| `RAG_RERANK_MODEL` | 检索精排 rerank 模型，默认 `qwen3-reranker:0.6b`（需 ollama pull） |
+| `RAG_RERANK_ENABLED` | 是否启用检索精排，默认 `true`，模型缺失时自动降级为原序 |
+| `RAG_RERANK_TIMEOUT_SECONDS` | 精排单次打分超时，默认 30 |
+| `RAG_CHAT_MEMORY_MAX_MESSAGES` | 触发上下文压缩的消息数阈值，默认 20 |
+| `RAG_CHAT_MEMORY_KEEP_MESSAGES` | 压缩后保留的最近消息数，默认 10 |
+| `RAG_CHAT_MEMORY_MAX_SUMMARY_CHARS` | 压缩摘要长度上限，默认 2000 |
 
 生产环境必须显式设置 `ADMIN_TOKEN_SECRET`、`INTERNAL_GATEWAY_SECRET` 和所有模型 API Key，不要使用代码或 Compose 中的开发兜底值。
 
@@ -333,7 +343,7 @@ GET  /api/shop/orders/result?requestId=...
 Gateway 限流
   -> 后端校验一次性 token
   -> Redis 预扣库存
-  -> RabbitMQ 排队
+  -> RocketMQ 排队
   -> 消费者创建订单并扣减数据库库存
   -> 前端轮询结果
   -> TTL / 死信队列取消超时未支付订单
@@ -435,7 +445,7 @@ docs/sql/cleanup-test-data.sql
 
 - 微服务拆分、统一 Gateway、统一认证、内部网关密钥。
 - Flyway 数据库迁移和基础数据 seed。
-- Redis、RabbitMQ、Elasticsearch、**Qdrant** 等中间件集成。
+- Redis、RocketMQ、Elasticsearch、**Qdrant** 等中间件集成。
 - **全本地化 RAG**：Qdrant 向量库 + Ollama (bge-m3 embedding + qwen3.5:9b chat) + LangChain4j Agent/Function Calling。
 - 商城并发控制、幂等、防超卖、订单超时取消。
 - 后台 RBAC、敏感操作确认、审计日志。

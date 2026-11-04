@@ -71,7 +71,7 @@ public class ShopController {
         }
     }
 
-    @Operation(summary = "秒杀下单入队", description = "将下单请求写入 RabbitMQ 队列，立即返回排队状态，前端再轮询订单结果。")
+    @Operation(summary = "秒杀下单入队", description = "将下单请求写入 RocketMQ 队列，立即返回排队状态，前端再轮询订单结果。")
     @PostMapping("/seckill-orders")
     public ApiResult<SeckillOrderSubmitResponse> submitSeckillOrder(@RequestHeader(USER_ID_HEADER) Long userId,
                                                                     @RequestBody CreateSeckillOrderRequest request) {

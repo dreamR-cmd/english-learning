@@ -441,7 +441,7 @@ backend-services/shop-service
 - 支付订单
 - Redis 库存扣减
 - MySQL 库存扣减
-- RabbitMQ 订单超时取消
+- RocketMQ 订单超时取消
 
 主要接口：
 
@@ -456,7 +456,7 @@ POST /api/shop/orders/{orderId}/pay
 
 - MySQL 存储商品与订单。
 - Redis 缓存商品库存并做原子扣减。
-- RabbitMQ 使用 TTL + 死信队列实现订单延迟超时取消。
+- RocketMQ 使用定时消息（延迟等级）实现订单延迟超时取消。
 
 下单流程：
 
@@ -465,20 +465,20 @@ POST /api/shop/orders/{orderId}/pay
 3. Redis 原子扣减库存。
 4. MySQL 条件扣减库存。
 5. 创建 `pending` 订单。
-6. 发送 RabbitMQ 延迟消息。
+6. 发送 RocketMQ 定时消息。
 7. 到期后检查订单是否仍为 `pending`。
 8. 未支付则取消订单并回补库存。
 
-RabbitMQ 延迟方案：
+RocketMQ 延迟方案：
 
 ```text
-普通队列 TTL + 死信队列
+定时消息 messageDelayLevel（按超时分钟数就近选级，10 分钟 = 级别 14）
 ```
 
 优点：
 
-- 不依赖 `rabbitmq_delayed_message_exchange` 插件。
-- 普通 RabbitMQ 即可运行。
+- 延迟消息为 RocketMQ 原生能力，无需 TTL + 死信队列组合。
+- 消费失败自动重试 16 次，耗尽后进入系统死信 Topic %DLQ%+{consumerGroup}。
 
 默认订单超时时间：
 
@@ -489,7 +489,7 @@ RabbitMQ 延迟方案：
 当前风险：
 
 - 创建订单、查询订单、支付订单依赖请求中的 `userId`。
-- RabbitMQ 延迟消息发送失败时仅记录 warn，订单仍会创建；后续需要补偿扫描机制，避免订单长期 pending。
+- RocketMQ 定时消息发送失败时仅记录 warn，订单仍会创建；后续需要补偿扫描机制，避免订单长期 pending。
 - 服务中存在未注册的 `AdminAuthFilter`，更像拆分残留。
 
 ---

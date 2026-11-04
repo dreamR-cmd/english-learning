@@ -1,6 +1,6 @@
 package com.english.service.impl;
 
-import com.english.config.ShopRabbitConfig;
+import com.english.config.ShopRocketMqConfig;
 import com.english.dto.OrderTokenResponse;
 import com.english.dto.SeckillOrderMessage;
 import com.english.dto.SeckillOrderResultResponse;
@@ -15,9 +15,11 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.core.MessagePostProcessor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.messaging.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -67,7 +69,7 @@ public class ShopServiceImpl implements ShopService {
     private final ShopOrderMapper orderMapper;
     private final ShopProductSearchService productSearchService;
     private final StringRedisTemplate redisTemplate;
-    private final RabbitTemplate rabbitTemplate;
+    private final RocketMQTemplate rocketMQTemplate;
     private final TransactionTemplate transactionTemplate;
     private final RedissonClient redissonClient;
     private final long orderTimeoutMinutes;
@@ -76,7 +78,7 @@ public class ShopServiceImpl implements ShopService {
                            ShopOrderMapper orderMapper,
                            ShopProductSearchService productSearchService,
                            StringRedisTemplate redisTemplate,
-                           RabbitTemplate rabbitTemplate,
+                           RocketMQTemplate rocketMQTemplate,
                            TransactionTemplate transactionTemplate,
                            RedissonClient redissonClient,
                            @Value("${shop.order.timeout-minutes:30}") long orderTimeoutMinutes) {
@@ -84,7 +86,7 @@ public class ShopServiceImpl implements ShopService {
         this.orderMapper = orderMapper;
         this.productSearchService = productSearchService;
         this.redisTemplate = redisTemplate;
-        this.rabbitTemplate = rabbitTemplate;
+        this.rocketMQTemplate = rocketMQTemplate;
         this.transactionTemplate = transactionTemplate;
         this.redissonClient = redissonClient;
         this.orderTimeoutMinutes = orderTimeoutMinutes;
@@ -210,11 +212,15 @@ public class ShopServiceImpl implements ShopService {
         try {
             reserveRedisStock(product);
             redisReserved = true;
-            rabbitTemplate.convertAndSend(
-                    ShopRabbitConfig.ORDER_EXCHANGE,
-                    ShopRabbitConfig.SECKILL_ORDER_ROUTING_KEY,
-                    new SeckillOrderMessage(userId, productId, normalizedRequestId)
-            );
+            Message<SeckillOrderMessage> message = MessageBuilder
+                    .withPayload(new SeckillOrderMessage(userId, productId, normalizedRequestId))
+                    .setHeader(org.apache.rocketmq.spring.support.RocketMQHeaders.KEYS, String.valueOf(productId))
+                    .build();
+            // destination 带 ":tag" 后缀，消息才会打上 TAG，与 @RocketMQMessageListener 的
+            // selectorExpression = SECKILL_ORDER_TAG 匹配；不带 tag 的消息会被静默过滤，永远无法消费
+            rocketMQTemplate.syncSend(
+                    ShopRocketMqConfig.SECKILL_ORDER_TOPIC + ":" + ShopRocketMqConfig.SECKILL_ORDER_TAG,
+                    message);
             log.info("Seckill order queued: userId={}, productId={}, requestId={}", userId, productId, normalizedRequestId);
             return new SeckillOrderSubmitResponse("queued", normalizedRequestId, null, "订单已进入排队");
         } catch (RuntimeException error) {
@@ -615,25 +621,34 @@ public class ShopServiceImpl implements ShopService {
     }
 
     private void sendOrderTimeoutMessage(Long orderId) {
-        int ttl = Math.toIntExact(TimeUnit.MINUTES.toMillis(orderTimeoutMinutes));
-        MessagePostProcessor processor = message -> {
-            message.getMessageProperties().setExpiration(String.valueOf(ttl));
-            return message;
-        };
-        rabbitTemplate.convertAndSend(
-                ShopRabbitConfig.ORDER_EXCHANGE,
-                ShopRabbitConfig.ORDER_DELAY_ROUTING_KEY,
-                orderId,
-                processor
-        );
-        log.info("RabbitMQ timeout message produced: orderId={}, exchange={}, routingKey={}, ttlMillis={}",
-                orderId, ShopRabbitConfig.ORDER_EXCHANGE, ShopRabbitConfig.ORDER_DELAY_ROUTING_KEY, ttl);
+        /*
+         * RocketMQ 定时消息：messageDelayLevel 共 18 级，
+         * 级别 14 = 10 分钟。订单超时分钟数默认 30 时与该等级最接近，
+         * 这里按超时分钟数就近选择延迟等级，避免依赖任意精度定时（RocketMQ 5.x 定时消息）。
+         */
+        int delayLevel = resolveDelayLevel(orderTimeoutMinutes);
+        Message<Long> message = MessageBuilder.withPayload(orderId).build();
+        rocketMQTemplate.syncSend(ShopRocketMqConfig.ORDER_TIMEOUT_TOPIC,
+                message, 3000, delayLevel);
+        log.info("RocketMQ timeout message produced: orderId={}, topic={}, delayLevel={}",
+                orderId, ShopRocketMqConfig.ORDER_TIMEOUT_TOPIC, delayLevel);
+    }
+
+    /** RocketMQ 默认延迟等级: 1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h */
+    private int resolveDelayLevel(long timeoutMinutes) {
+        long[] levelMinutes = {0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 60, 120};
+        for (int level = levelMinutes.length - 1; level >= 1; level--) {
+            if (timeoutMinutes >= levelMinutes[level]) {
+                return level;
+            }
+        }
+        return 1;
     }
 
     private void trySendOrderTimeoutMessage(Long orderId) {
         try {
             sendOrderTimeoutMessage(orderId);
-        } catch (AmqpException error) {
+        } catch (RuntimeException error) {
             log.warn("Failed to send timeout message for shop order {}", orderId, error);
         }
     }

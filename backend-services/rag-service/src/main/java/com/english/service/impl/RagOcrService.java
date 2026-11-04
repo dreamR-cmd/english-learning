@@ -1,5 +1,6 @@
 package com.english.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -71,6 +72,9 @@ public class RagOcrService {
                 return "";
             }
             return text;
+        } catch (JsonProcessingException error) {
+            log.warn("[OCR] request serialization failed (model={}): {}", model, safeMessage(error));
+            return "";
         } catch (RuntimeException error) {
             log.warn("[OCR] recognition failed (model={}): {}", model, safeMessage(error));
             return "";

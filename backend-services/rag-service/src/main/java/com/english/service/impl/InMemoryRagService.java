@@ -55,6 +55,7 @@ public class InMemoryRagService implements RagService {
     private final RagChunker chunker;
     private final RagEmbeddingService embeddingService;
     private final RagVectorStore vectorStore;
+    private final RagRerankService rerankService;
     private final RagDocumentFileParser fileParser;
     private final RagAgentService ragAgentService;
     private final RagChatModelFactory chatModelFactory;
@@ -71,6 +72,7 @@ public class InMemoryRagService implements RagService {
                               RagChunker chunker,
                               RagEmbeddingService embeddingService,
                               RagVectorStore vectorStore,
+                              RagRerankService rerankService,
                               RagDocumentFileParser fileParser,
                               RagAgentService ragAgentService,
                               RagChatModelFactory chatModelFactory,
@@ -85,6 +87,7 @@ public class InMemoryRagService implements RagService {
         this.chunker = chunker;
         this.embeddingService = embeddingService;
         this.vectorStore = vectorStore;
+        this.rerankService = rerankService;
         this.fileParser = fileParser;
         this.ragAgentService = ragAgentService;
         this.chatModelFactory = chatModelFactory;
@@ -178,18 +181,21 @@ public class InMemoryRagService implements RagService {
             return List.of();
         }
         int limit = normalizeLimit(topK);
-        List<RagSearchItem> keywordResults = keywordSearch(question, limit);
+        // 召回阶段扩量（3 倍），给精排留出重排空间；精排不可用时仍取前 limit 条
+        int recallLimit = Math.min(limit * 3, 60);
+        List<RagSearchItem> keywordResults = keywordSearch(question, recallLimit);
         List<RagSearchItem> vectorResults = List.of();
         try {
             float[] queryVector = embeddingService.embed(question);
             vectorStore.ensureIndex();
-            vectorResults = vectorStore.search(queryVector, limit);
+            vectorResults = vectorStore.search(queryVector, recallLimit);
         } catch (RuntimeException error) {
             if (keywordResults.isEmpty()) {
                 throw error;
             }
         }
-        return mergeSearchResults(keywordResults, vectorResults, limit);
+        List<RagSearchItem> candidates = mergeSearchResults(keywordResults, vectorResults, recallLimit);
+        return rerankService.rerank(question, candidates, limit);
     }
 
     public interface Assistant {

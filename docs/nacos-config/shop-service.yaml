@@ -2,13 +2,11 @@ server:
   port: ${SHOP_SERVICE_PORT:8090}
 
 spring:
-  rabbitmq:
-    listener:
-      simple:
-        retry:
-          enabled: true
-          initial-interval: 1000
-          max-attempts: 3
+  rocketmq:
+    consumer:
+      seckill-order:
+        # 消费重试由 RocketMQ 内建机制处理（默认最多 16 次），无需应用层 retry 配置
+        enabled: true
 
 shop:
   order:

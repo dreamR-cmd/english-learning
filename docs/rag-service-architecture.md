@@ -75,10 +75,26 @@ InMemoryRagService.askStream()
 
 OCR 实现：`RagOcrService` → `POST {ollama}/api/generate`（model=`rag.ocr.model`，默认 `qwen2.5vl:7b`，图片 base64，stream=false）。识别失败降级为空串并 warn，不阻断整份文档。
 
+### 3.2.1 检索精排（rerank）
+
+检索采用"召回扩量 + 精排"两段式（`RagRerankService`）：
+
+```
+问题 → 关键词检索(3×topK) ─┐
+     → 向量检索(3×topK)   ─┤→ merge 去重合并 → 精排: 对每个 (query, snippet) 调
+                            |   Ollama rerank 模型打 0~1 相关性分（temperature=0）
+                            → 按分排序取 topK → LLM
+```
+
+- 模型：`rag.rerank.model`（默认 `qwen3-reranker:0.6b`，LLM-as-judge 式打分）
+- 降级：模型不可用/调用失败 → 返回合并后原序的前 topK，仅 warn 不阻断
+- 开关：`rag.rerank.enabled=false` 可整体关闭对比效果
+
 **部署前提**：
 ```bash
-ollama pull qwen2.5vl:7b   # 视觉模型
-ffmpeg                      # 视频抽帧必需（Windows: winget install ffmpeg）
+ollama pull qwen2.5vl:7b        # 视觉模型（图片/扫描PDF/视频帧 OCR）
+ollama pull qwen3-reranker:0.6b # 检索精排
+ffmpeg                          # 视频抽帧必需（Windows: winget install ffmpeg）
 ```
 
 ### 3.3 向量库写入（Qdrant）
@@ -123,6 +139,9 @@ ffmpeg                      # 视频抽帧必需（Windows: winget install ffmpe
 | `rag.ocr.max-pdf-pages` | 50 | 扫描 PDF OCR 页数上限 |
 | `rag.ocr.video-frame-interval-seconds` | 10 | 视频抽帧间隔 |
 | `rag.ocr.timeout-seconds` | 120 | OCR HTTP 超时 |
+| `rag.rerank.model` | qwen3-reranker:0.6b | 检索精排模型（需 ollama pull） |
+| `rag.rerank.enabled` | true | 精排开关，模型缺失时自动降级为原序 |
+| `rag.rerank.timeout-seconds` | 30 | 精排单次打分超时 |
 | `rag.chat.memory.max-messages` | 20 | 触发压缩的消息数阈值 |
 | `rag.chat.memory.keep-messages` | 10 | 压缩后保留的最近消息数 |
 | `rag.chat.memory.max-summary-chars` | 2000 | 摘要长度上限 |

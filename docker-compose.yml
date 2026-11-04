@@ -10,10 +10,7 @@ x-backend-env: &backend-env
   REDIS_DATABASE: "0"
   NACOS_SERVER_ADDR: nacos:8848
   NACOS_CONFIG_GROUP: DEFAULT_GROUP
-  RABBITMQ_HOST: rabbitmq
-  RABBITMQ_PORT: "5672"
-  RABBITMQ_USERNAME: guest
-  RABBITMQ_PASSWORD: guest
+  ROCKETMQ_NAME_SERVER: rocketmq-namesrv:9876
   ADMIN_TOKEN_SECRET: english-learning-admin-secret
   INTERNAL_GATEWAY_SECRET: english-learning-internal-secret
 
@@ -67,54 +64,79 @@ services:
     networks:
       - english-learning
 
-  ollama:
-    image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      OLLAMA_NUM_PARALLEL: "2"
-      OLLAMA_MAX_LOADED_MODELS: "1"
-    restart: unless-stopped
-    networks:
-      - english-learning
+  # ollama:
+  #   image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   environment:
+  #     OLLAMA_NUM_PARALLEL: "2"
+  #     OLLAMA_MAX_LOADED_MODELS: "1"
+  #   restart: unless-stopped
+  #   networks:
+  #     - english-learning
 
-  ollama-init:
-    image: curlimages/curl:latest
-    depends_on:
-      ollama:
-        condition: service_started
-    command: >
-      sh -c '
-        echo "waiting for ollama..."
-        until curl -s http://ollama:11434/api/tags >/dev/null 2>&1; do
-          sleep 2
-        done
-        echo "pulling bge-m3 model (this may take a few minutes)..."
-        curl -s http://ollama:11434/api/pull -d "{\"name\":\"bge-m3\"}"
-        echo "bge-m3 ready"
-      '
-    restart: "no"
-    networks:
-      - english-learning
+  # ollama-init:
+  #   image: curlimages/curl:latest
+  #   depends_on:
+  #     ollama:
+  #       condition: service_started
+  #   command: >
+  #     sh -c '
+  #       echo "waiting for ollama..."
+  #       until curl -s http://ollama:11434/api/tags >/dev/null 2>&1; do
+  #         sleep 2
+  #       done
+  #       echo "pulling bge-m3 model (this may take a few minutes)..."
+  #       curl -s http://ollama:11434/api/pull -d "{\"name\":\"bge-m3\"}"
+  #       echo "bge-m3 ready"
+  #     '
+  #   restart: "no"
+  #   networks:
+  #     - english-learning
 
-  rabbitmq:
-    image: ${RABBITMQ_IMAGE:-rabbitmq:3-management-alpine}
+  rocketmq-namesrv:
+    image: ${ROCKETMQ_IMAGE:-apache/rocketmq:5.3.1}
+    # 镜像内实际路径是 /home/rocketmq/rocketmq-5.3.1（ROCKETMQ_HOME），挂载点须真实存在
+    # 否则 uid=3000 的 rocketmq 用户对 root 属主卷目录无写权限，broker 会 NPE 退出
+    working_dir: /home/rocketmq/rocketmq-5.3.1/bin
+    command: sh mqnamesrv
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      JAVA_OPT_EXT: "-Xms256m -Xmx256m -Xmn64m"
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "9876:9876"
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - rocketmq_namesrv_data:/home/rocketmq/rocketmq-5.3.1/store
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD-SHELL", "/home/rocketmq/rocketmq-5.3.1/bin/mqadmin clusterList -n localhost:9876 || exit 1"]
+      interval: 15s
+      timeout: 10s
       retries: 10
-      start_period: 20s
+      start_period: 30s
+    networks:
+      - english-learning
+
+  rocketmq-broker:
+    image: ${ROCKETMQ_IMAGE:-apache/rocketmq:5.3.1}
+    working_dir: /home/rocketmq/rocketmq-5.3.1/bin
+    command: sh mqbroker -n rocketmq-namesrv:9876
+    environment:
+      JAVA_OPT_EXT: "-Xms512m -Xmx512m -Xmn128m"
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    depends_on:
+      rocketmq-namesrv:
+        condition: service_healthy
+    volumes:
+      - rocketmq_broker_data:/home/rocketmq/rocketmq-5.3.1/store
+    healthcheck:
+      test: ["CMD-SHELL", "/home/rocketmq/rocketmq-5.3.1/bin/mqadmin brokerStatus -n rocketmq-namesrv:9876 -b rocketmq-broker:10911 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
     networks:
       - english-learning
 
@@ -288,7 +310,7 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-      rabbitmq:
+      rocketmq-broker:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
@@ -344,6 +366,13 @@ services:
       RAG_CHAT_PROVIDER: ollama
       RAG_CHAT_MODEL_NAME: qwen3.5:9b
       RAG_CHAT_OLLAMA_BASE_URL: http://host.docker.internal:11434
+      RAG_OCR_MODEL: qwen2.5vl:7b
+      RAG_OCR_MAX_PDF_PAGES: "50"
+      RAG_OCR_VIDEO_FRAME_INTERVAL_SECONDS: "10"
+      RAG_OCR_TIMEOUT_SECONDS: "120"
+      RAG_RERANK_MODEL: qwen3-reranker:0.6b
+      RAG_RERANK_ENABLED: "true"
+      RAG_RERANK_TIMEOUT_SECONDS: "30"
       JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
     ports:
     - "8092:8092"
@@ -420,7 +449,9 @@ services:
 volumes:
   mysql_data:
   redis_data:
-  rabbitmq_data:
+  rocketmq_namesrv_data:
+  rocketmq_broker_data:
+  rocketmq_broker_logs:
   elasticsearch_data:
   nacos_data:
   nacos_logs:
