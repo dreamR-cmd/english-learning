@@ -27,3 +27,4 @@ docs/*.md
 backend-services\rag-service\target
 # 统一忽略所有 Maven 构建产物
 **/target/
+jmeter/
