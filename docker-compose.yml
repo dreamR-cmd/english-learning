@@ -140,6 +140,19 @@ services:
     networks:
       - english-learning
 
+  rocketmq-dashboard:
+    image: ${ROCKETMQ_DASHBOARD_IMAGE:-apacherocketmq/rocketmq-dashboard:latest}
+    container_name: rocketmq-dashboard
+    ports:
+      - "8180:8082"        # 宿主机 8180 → 容器 8080，避免和 gateway 的 8081 混淆
+    environment:
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-namesrv:9876"
+    depends_on:
+      rocketmq-namesrv:
+        condition: service_healthy
+    networks:
+      - english-learning
+
   elasticsearch:
     image: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:8.14.3}
     environment:
@@ -299,6 +312,8 @@ services:
       SHOP_SERVICE_PORT: "8090"
       ORDER_TIMEOUT_MINUTES: "10"
       ELASTICSEARCH_URL: http://elasticsearch:9200
+    ports:
+      - "8090:8090"
     expose:
       - "8090"
     depends_on:
